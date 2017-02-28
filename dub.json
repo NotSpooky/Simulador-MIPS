@@ -1,0 +1,9 @@
+{
+	"name": "proyecto-arquitectura",
+	"authors": [
+		"Christian Durán C"
+	],
+	"description": "Simulador MIPS",
+	"copyright": "-",
+	"license": "MIT"
+}
