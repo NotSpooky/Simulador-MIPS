@@ -10,19 +10,15 @@ void main ()
     auto programa = `source/test.txt`.leerArchivo;
     rellenarMemoria (programa);
     writeln ("Memoria al iniciar ejecución: \n", memoriaPrincipal, '\n');
-    auto tidNúcleo = spawn (&iniciarEjecución, thisTid, 0);
-    // Contador de programa al inicio.
-    tidNúcleo.send (cast (uint) bloqueInicioInstrucciones);
+    auto tidNúcleo = spawn (&iniciarEjecución, thisTid, 0, bloqueInicioInstrucciones);
     import std.typecons : Tuple;
     import reloj        : iniciar;
     iniciar ([Tuple!(uint, Tid)(0, tidNúcleo)]);
 }
 
 // Tid son identificadores de cada hilo.
-void iniciarEjecución (Tid tidPadre, uint númeroNúcleo) {
-    auto contadorDePrograma = receiveOnly!uint;
-    import memorias; 
-    Núcleo núcleo = new Núcleo (contadorDePrograma, tidPadre, númeroNúcleo);
+void iniciarEjecución (Tid tidPadre, uint númeroNúcleo, uint contadorPrograma) {
+    Núcleo núcleo = new Núcleo (contadorPrograma, tidPadre, númeroNúcleo);
     núcleo.ejecutar;
 }
 
