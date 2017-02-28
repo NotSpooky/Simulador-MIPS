@@ -40,11 +40,14 @@ final class Núcleo {
                 /**/ Instrucción (memoriaPrincipal [contadorDePrograma]);
                 this.interpretar (instrucción);
                 contadorDePrograma ++;
-                //auto tock = Respuesta (Respuesta.Tipo.tock, thisTid);
-                //tidReloj.send (tock);
+                auto tock = Respuesta (Respuesta.Tipo.tock, this.númeroNúcleo);
+                tidReloj.send (tock);
 
             } 
         } catch (EndOfProgramException) {
+            import reloj : Respuesta;
+            auto mensajeFin = Respuesta (Respuesta.Tipo.terminóEjecución, this.númeroNúcleo);
+            tidReloj.send (mensajeFin);
             return;
         }
     }
