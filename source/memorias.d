@@ -27,7 +27,28 @@ class Caché {
     /**/ ~ `usual, que solo pueden tener ciertas direcciones específicas o si `
     /**/ ~ `pueden tener 4 bloques arbitrarios.`);
     Bloque!(Tipo.caché) [4] bloques;
-    alias bloques this;
+    auto ref opIndex (size_t índice) {
+        foreach (bloque; bloques) {
+            if (bloque.válido && bloque.posEnMemoria == índice) {
+                return bloque;
+            }
+        }
+        // No se encontró.
+        return traerDeMemoria (índice);
+    }
+
+    private Bloque!(Tipo.caché) traerDeMemoria (size_t índice) {
+        auto bloquePorColocar 
+        /**/ = Bloque!(Tipo.caché) (memoriaPrincipal [índice], índice.to!uint);
+        this.bloques [posiciónParaReemplazarBloque] = bloquePorColocar;
+        return bloquePorColocar;
+    }
+    private @property uint posiciónParaReemplazarBloque () {
+        m_índiceParaReemplazar 
+        /**/ = ((m_índiceParaReemplazar + 1) % this.bloques.length.to!uint);
+        return m_índiceParaReemplazar;
+    }
+    private uint m_índiceParaReemplazar;
 }
 
 enum Tipo {memoria, caché}
@@ -45,6 +66,12 @@ struct Bloque (Tipo tipo) {
         palabra [palabrasPorBloque] palabras = 0;
         bool válido                          = false;
         uint posEnMemoria                    = 0;
+        /// Constructor para convertir bloques de memoria a bloques de caché.
+        this (shared Bloque!(Tipo.memoria) bloqueMemoria, uint posEnMemoria) {
+            this.palabras     = bloqueMemoria.palabras;
+            this.válido       = true;
+            this.posEnMemoria = posEnMemoria;
+        }
     }
     alias palabras this;
 }

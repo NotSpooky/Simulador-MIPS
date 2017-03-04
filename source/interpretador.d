@@ -110,7 +110,7 @@ static void interpretar (Núcleo núcleo, Instrucción instrucción) {
             auto posición = posBase / bytesPorPalabra;
             assert (posición >= 0);
             núcleo.registros [rf2]
-            /**/ = memoriaPrincipal [posición / bytesPorPalabra][posición % bytesPorPalabra];
+            /**/ = núcleo.cachéDatos [posición / bytesPorPalabra][posición % bytesPorPalabra];
             break;
         case Código.SW:
             // Memoria (n + (Ry)) <-- Rx 
