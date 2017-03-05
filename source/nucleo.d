@@ -8,16 +8,18 @@ final class Núcleo {
     import std.concurrency : Tid, receiveOnly, send, thisTid;
     this (uint contadorDePrograma, Tid tidReloj, uint númeroNúcleo) {
         this.contadorDePrograma = contadorDePrograma;
-        cachéInstrucciones = new Caché ();
-        cachéDatos         = new Caché ();
+        import bus : busInstrucciones, busDatos;
+        cachéInstrucciones = new Caché (busInstrucciones);
+        cachéDatos         = new Caché (busDatos);
         this.tidReloj      = tidReloj;
         this.númeroNúcleo  = númeroNúcleo;
     }
+    @disable this ();
     uint contadorDePrograma; /// Tiene el número de bloque.
     Registros registros;
     import memorias : Caché;
-    Caché     cachéDatos;
-    Caché     cachéInstrucciones;
+    Caché     cachéDatos         = null;
+    Caché     cachéInstrucciones = null;
     Tid       tidReloj;
     uint      númeroNúcleo;
     invariant {

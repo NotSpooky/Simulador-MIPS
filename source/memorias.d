@@ -26,8 +26,18 @@ class Caché {
     pragma (msg, `OJO Preguntar si las cachés son como las de un procesador `
     /**/ ~ `usual, que solo pueden tener ciertas direcciones específicas o si `
     /**/ ~ `pueden tener 4 bloques arbitrarios.`);
+    @disable this ();
+    import bus : Bus;
+    this (shared Bus busAccesoAMemoria) {
+        assert (busAccesoAMemoria);
+        this.busAccesoAMemoria = busAccesoAMemoria;
+    }
+
     Bloque!(Tipo.caché) [4] bloques;
-    auto ref opIndex (size_t índice) {
+    shared Bus busAccesoAMemoria;
+
+    /// Se indexa igual que la memoria.
+    auto opIndex (size_t índice) {
         foreach (bloque; bloques) {
             if (bloque.válido && bloque.posEnMemoria == índice) {
                 return bloque;
@@ -37,13 +47,15 @@ class Caché {
         return traerDeMemoria (índice);
     }
 
+    /// Usa el bus para accesar la memoria y reemplaza una bloque de esta caché.
+    /// Retorna el bloque obtenido.
     private Bloque!(Tipo.caché) traerDeMemoria (size_t índice) {
-        auto bloquePorColocar 
-        /**/ = Bloque!(Tipo.caché) (memoriaPrincipal [índice], índice.to!uint);
-        this.bloques [posiciónParaReemplazarBloque] = bloquePorColocar;
+        auto bloqueDeBus = busAccesoAMemoria [índice];
+        auto bloquePorColocar = Bloque!(Tipo.caché) (bloqueDeBus, índice.to!uint);
+        this.bloques [víctima] = bloquePorColocar;
         return bloquePorColocar;
     }
-    private @property uint posiciónParaReemplazarBloque () {
+    private @property uint víctima () {
         m_índiceParaReemplazar 
         /**/ = ((m_índiceParaReemplazar + 1) % this.bloques.length.to!uint);
         return m_índiceParaReemplazar;
@@ -67,8 +79,8 @@ struct Bloque (Tipo tipo) {
         bool válido                          = false;
         uint posEnMemoria                    = 0;
         /// Constructor para convertir bloques de memoria a bloques de caché.
-        this (shared Bloque!(Tipo.memoria) bloqueMemoria, uint posEnMemoria) {
-            this.palabras     = bloqueMemoria.palabras;
+        this (palabra [palabrasPorBloque] palabras, uint posEnMemoria) {
+            this.palabras     = palabras;
             this.válido       = true;
             this.posEnMemoria = posEnMemoria;
         }
