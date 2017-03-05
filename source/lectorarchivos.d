@@ -1,6 +1,7 @@
 module lectorarchivos;
 
-/// Retorna el espacio sobrante de posiciónMemoria.
+/// Retorna el archivo leído como una matriz de filas/líneas/instrucciones
+/// y columnas/secciones de instrucción.
 int [][] leerArchivo  (string nombreArchivo) {
     import std.stdio     : File;
     import std.array     : split, array, join;
