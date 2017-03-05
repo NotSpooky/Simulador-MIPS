@@ -36,10 +36,9 @@ final class Núcleo {
             while (true) {
                 import reloj         : Tick, Respuesta;
                 receiveOnly!Tick; // Espera mensaje para empezar.
-                import memorias      : memoriaPrincipal, Bloque, Tipo;
                 import interpretador : Instrucción, Código, interpretar;
                 auto instrucción = 
-                /**/ Instrucción (memoriaPrincipal [contadorDePrograma]);
+                /**/ Instrucción (cachéInstrucciones [contadorDePrograma]);
                 this.interpretar (instrucción);
                 contadorDePrograma ++;
                 // Envía mensaje informando que finalizó.

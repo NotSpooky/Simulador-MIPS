@@ -10,8 +10,7 @@ struct Instrucción {
     int inm; // Puede ser negativo y mayor que 255.
     @disable this ();
     import memorias : Bloque, Tipo;
-    @safe this (shared Bloque!(Tipo.memoria) memoriaRaw) {
-        pragma (msg, `TO DO: Cambiar el constructor de Instrucción para que use memoria de caché`);
+    @safe this (Bloque!(Tipo.caché) memoriaRaw) {
         this.código = memoriaRaw [0].to!Código;
         this.rf1    = memoriaRaw [1];
         this.rf2    = memoriaRaw [2];
