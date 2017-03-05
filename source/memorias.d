@@ -50,19 +50,23 @@ class Caché {
         return traerDeMemoria (índiceEnMemoria);
     }
     // Lol duplicación de código.
-    void opIndexAssign (palabra [bloquesPorCaché] porColocar, size_t índiceEnMemoria) {
+    /// Asigna un valor a memoria.
+    /// Se usa: estaCaché [índiceEnMemoria] = porColocar.
+    void opIndexAssign (palabra porColocar, size_t numBloqueMemoria, size_t numPalabraEnBloque) {
+        assert (numPalabraEnBloque < palabrasPorBloque);
         // Se coloca en la caché si está.
         foreach (ref bloque; bloques) {
-            if (bloque.válido && bloque.posEnMemoria == índiceEnMemoria) {
-                bloque.palabras = porColocar;
+            if (bloque.válido && bloque.posEnMemoria == numBloqueMemoria) {
+                bloque.palabras [numPalabraEnBloque] = porColocar;
             }
         }
         // Se coloca en memoria usando el bus aunque no esté en caché.
-        this.busAccesoAMemoria [índiceEnMemoria] = porColocar;
+        this.busAccesoAMemoria [numBloqueMemoria, numPalabraEnBloque] = porColocar;
     }
 
     /// Usa el bus para accesar la memoria y reemplaza una bloque de esta caché.
     /// Retorna el bloque obtenido.
+    /// Desde otros módulos accesar por índice, no usar esta función.
     private Bloque!(Tipo.caché) traerDeMemoria (size_t índice) {
         auto bloqueDeBus = this.busAccesoAMemoria [índice];
         auto bloquePorColocar = Bloque!(Tipo.caché) (bloqueDeBus, índice.to!uint);

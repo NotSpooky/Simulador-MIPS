@@ -31,7 +31,7 @@ final class Núcleo {
     }
 
     void ejecutar () {
-        import interpretador : EndOfProgramException;
+        import interpretador : ExcepciónDeFinDePrograma;
         try {
             while (true) {
                 import reloj         : Tick, Respuesta;
@@ -47,7 +47,7 @@ final class Núcleo {
                 tidReloj.send (tock);
 
             } 
-        } catch (EndOfProgramException) {
+        } catch (ExcepciónDeFinDePrograma) {
             import reloj : Respuesta;
             auto mensajeFin = Respuesta (Respuesta.Tipo.terminóEjecución, this.númeroNúcleo);
             tidReloj.send (mensajeFin);

@@ -122,11 +122,12 @@ static void interpretar (Núcleo núcleo, Instrucción instrucción) {
             /**/ , `SW no alineado: ` ~ posBase.to!string);
             auto posición = posBase / bytesPorPalabra;
             assert (posición >= 0);
-            memoriaPrincipal [posición / bytesPorPalabra][posición % bytesPorPalabra] = Rx;
+            núcleo
+                .cachéDatos [posición / bytesPorPalabra, posición % bytesPorPalabra] = Rx;
             break;
         case Código.FIN:
             // Stop stop stop stop.
-            throw new EndOfProgramException ();
+            throw new ExcepciónDeFinDePrograma ();
         case Código.LL:
             assert (0, `TO DO: LL`);
         case Código.SC:
@@ -134,7 +135,7 @@ static void interpretar (Núcleo núcleo, Instrucción instrucción) {
     }
 }
 
-class EndOfProgramException : Exception {
+class ExcepciónDeFinDePrograma : Exception {
     this () {
         super (``);
     }

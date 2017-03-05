@@ -16,9 +16,7 @@ class Bus {
 
     /// Se usa como: esteBus [bloqueDeMemoria] = algo;
     /// Coloca en la Memoria principal porColocar.
-    shared auto opIndexAssign (palabra [palabrasPorBloque] porColocar, size_t bloqueDeMemoria) {
-        import memorias : Bloque, Tipo;
-        memoriaPrincipal [bloqueDeMemoria] 
-        /**/ = shared Bloque!(Tipo.memoria) (porColocar.to!(shared int [palabrasPorBloque]));
+    shared auto opIndexAssign (palabra porColocar, size_t bloqueDeMemoria, size_t numPalabraEnBloque) {
+        memoriaPrincipal [bloqueDeMemoria][numPalabraEnBloque] = porColocar;
     }
 }
