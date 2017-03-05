@@ -14,7 +14,7 @@ class Bus {
             .to!(palabra [palabrasPorBloque]); // Le quita el shared.
     }
 
-    /// Se usa como: esteBus [bloqueDeMemoria] = algo;
+    /// Se usa como: esteBus [bloqueDeMemoria, numPalabraEnBloque] = porColocar;
     /// Coloca en la Memoria principal porColocar.
     shared auto opIndexAssign (palabra porColocar, size_t bloqueDeMemoria, size_t numPalabraEnBloque) {
         memoriaPrincipal [bloqueDeMemoria][numPalabraEnBloque] = porColocar;

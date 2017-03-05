@@ -51,7 +51,7 @@ class Caché {
     }
     // Lol duplicación de código.
     /// Asigna un valor a memoria.
-    /// Se usa: estaCaché [índiceEnMemoria] = porColocar.
+    /// Se usa: estaCaché [numBloqueMemoria, numPalabraEnBloque] = porColocar.
     void opIndexAssign (palabra porColocar, size_t numBloqueMemoria, size_t numPalabraEnBloque) {
         assert (numPalabraEnBloque < palabrasPorBloque);
         // Se coloca en la caché si está.
