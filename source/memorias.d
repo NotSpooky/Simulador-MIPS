@@ -7,9 +7,12 @@ enum bytesPorPalabra           = palabra.sizeof;
 enum bloqueInicioInstrucciones = 24;
 enum bloqueFinInstrucciones    = 63;
 enum palabrasPorBloque         = 4;
+enum bloquesPorCaché           = 4;
 
 shared static Bloque!(Tipo.memoria) [64] memoriaPrincipal;
 
+/// Se ejecuta al inicio para llenar la memoria con enteros.
+/// Sirve para colocar más fácilmente los datos leídos de un archivo.
 static void rellenarMemoria (int [][] valoresRaw) {
     auto maxPos = valoresRaw.length + bloqueInicioInstrucciones;
     assert (maxPos <= bloqueFinInstrucciones
@@ -33,34 +36,48 @@ class Caché {
         this.busAccesoAMemoria = busAccesoAMemoria;
     }
 
-    Bloque!(Tipo.caché) [4] bloques;
+    Bloque!(Tipo.caché) [bloquesPorCaché] bloques;
     shared Bus busAccesoAMemoria;
 
     /// Se indexa igual que la memoria.
-    auto opIndex (size_t índice) {
+    auto opIndex (size_t índiceEnMemoria) {
         foreach (bloque; bloques) {
-            if (bloque.válido && bloque.posEnMemoria == índice) {
+            if (bloque.válido && bloque.posEnMemoria == índiceEnMemoria) {
                 return bloque;
             }
         }
         // No se encontró.
-        return traerDeMemoria (índice);
+        return traerDeMemoria (índiceEnMemoria);
+    }
+    // Lol duplicación de código.
+    void opIndexAssign (palabra [bloquesPorCaché] porColocar, size_t índiceEnMemoria) {
+        // Se coloca en la caché si está.
+        foreach (ref bloque; bloques) {
+            if (bloque.válido && bloque.posEnMemoria == índiceEnMemoria) {
+                bloque.palabras = porColocar;
+            }
+        }
+        // Se coloca en memoria usando el bus aunque no esté en caché.
+        this.busAccesoAMemoria [índiceEnMemoria] = porColocar;
     }
 
     /// Usa el bus para accesar la memoria y reemplaza una bloque de esta caché.
     /// Retorna el bloque obtenido.
     private Bloque!(Tipo.caché) traerDeMemoria (size_t índice) {
-        auto bloqueDeBus = busAccesoAMemoria [índice];
+        auto bloqueDeBus = this.busAccesoAMemoria [índice];
         auto bloquePorColocar = Bloque!(Tipo.caché) (bloqueDeBus, índice.to!uint);
-        this.bloques [víctima] = bloquePorColocar;
+        this.bloques [víctimaParaReemplazo] = bloquePorColocar;
         return bloquePorColocar;
     }
-    private @property uint víctima () {
+
+    /// Retorna el índice de la posición de la caché que debe reemplazarse.
+    /// No se necesita cambiar m_índiceParaReemplazar en ninguna otra función.
+    private @property uint víctimaParaReemplazo () {
         m_índiceParaReemplazar 
         /**/ = ((m_índiceParaReemplazar + 1) % this.bloques.length.to!uint);
         return m_índiceParaReemplazar;
     }
-    private uint m_índiceParaReemplazar;
+    private uint m_índiceParaReemplazar; // Usado para víctimaParaReemplazo.
 }
 
 enum Tipo {memoria, caché}

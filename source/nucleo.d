@@ -42,6 +42,7 @@ final class Núcleo {
                 /**/ Instrucción (memoriaPrincipal [contadorDePrograma]);
                 this.interpretar (instrucción);
                 contadorDePrograma ++;
+                // Envía mensaje informando que finalizó.
                 auto tock = Respuesta (Respuesta.Tipo.tock, this.númeroNúcleo);
                 tidReloj.send (tock);
 

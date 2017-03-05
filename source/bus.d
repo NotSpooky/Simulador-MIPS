@@ -4,18 +4,21 @@ shared static Bus busDatos         = new Bus ();
 shared static Bus busInstrucciones = new Bus ();
 
 class Bus {
-    import memorias : palabra, palabrasPorBloque;
-    shared auto opIndex (size_t índice) {
-        import memorias : memoriaPrincipal;
-        import std.conv : to;
-        palabra [4] porRetornar;
-        import std.stdio: writeln;
-        writeln (`índice `, índice);
-        auto leido = memoriaPrincipal [índice].palabras;
-        assert (leido.length == porRetornar.length);
-        foreach (uint i, palabraLeida; leido) {
-            porRetornar [i] = palabraLeida;
-        }
-        return porRetornar;
+    import memorias : palabra, palabrasPorBloque, memoriaPrincipal;
+    import std.conv : to;
+    /// Se usa como: esteBus [bloqueDeMemoria];
+    /// Retorna las palabras del bloque leido de memoria.
+    shared auto opIndex (size_t bloqueDeMemoria) {
+        return memoriaPrincipal [bloqueDeMemoria]
+            .palabras
+            .to!(palabra [palabrasPorBloque]); // Le quita el shared.
+    }
+
+    /// Se usa como: esteBus [bloqueDeMemoria] = algo;
+    /// Coloca en la Memoria principal porColocar.
+    shared auto opIndexAssign (palabra [palabrasPorBloque] porColocar, size_t bloqueDeMemoria) {
+        import memorias : Bloque, Tipo;
+        memoriaPrincipal [bloqueDeMemoria] 
+        /**/ = shared Bloque!(Tipo.memoria) (porColocar.to!(shared int [palabrasPorBloque]));
     }
 }
