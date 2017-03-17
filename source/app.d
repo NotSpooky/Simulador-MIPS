@@ -12,19 +12,12 @@ void main ()
     writeln ("Memoria al iniciar ejecución: \n", memoriaPrincipal, '\n');
     auto tidNúcleo = spawn (&iniciarEjecución, thisTid, 0, bloqueInicioInstrucciones);
     import std.typecons : Tuple;
-    import reloj        : iniciar;
-    iniciar ([Tuple!(uint, Tid)(0, tidNúcleo)]);
+    import reloj        : iniciarReloj;
+    iniciarReloj ([Tuple!(uint, Tid)(0, tidNúcleo)]);
 }
 
 // Tid son identificadores de cada hilo.
 void iniciarEjecución (Tid tidPadre, uint númeroNúcleo, uint contadorPrograma) {
     Núcleo núcleo = new Núcleo (contadorPrograma, tidPadre, númeroNúcleo);
     núcleo.ejecutar;
-}
-
-enum TipoSolicitud {escritura, lectura, respuestaLectura};
-struct SolicitudDeMemoria {
-    uint numeroBloque;
-    import memorias : Bloque, Tipo;
-    Bloque!(Tipo.caché) datos; // No estoy seguro si hacerlo de caché.
 }
