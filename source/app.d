@@ -12,8 +12,8 @@ void main ()
     writeln ("Memoria al iniciar ejecución: \n", memoriaPrincipal, '\n');
     auto tidNúcleo = spawn (&iniciarEjecución, thisTid, 0, bloqueInicioInstrucciones);
     import std.typecons : Tuple;
-    import reloj        : iniciarReloj;
-    iniciarReloj ([Tuple!(uint, Tid)(0, tidNúcleo)]);
+    import reloj        : iniciarReloj, HiloDeNúcleoConIdentificador;
+    iniciarReloj ([HiloDeNúcleoConIdentificador(tidNúcleo, 0)]);
 }
 
 // Tid son identificadores de cada hilo.

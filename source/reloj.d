@@ -8,7 +8,6 @@ struct Respuesta {
 }
 
 import std.concurrency;
-import std.typecons : Tuple;
 import std.algorithm : countUntil, remove, map;
 /*******************************************************************************
  * Envía `ticks` a todos los núcleos y espera sus `tocks` para sincronizarlos.
@@ -16,12 +15,12 @@ import std.algorithm : countUntil, remove, map;
  * ese Tid.
  * Deja de ejecutar cuando todos los núcleos anunciaron su fin.
  ******************************************************************************/
-void iniciarReloj (Tuple!(uint /*# de núcleo desde 0*/, Tid /*Identificador para el SO*/) [] tidNúcleos) {
+void iniciarReloj (HiloDeNúcleoConIdentificador [] tidNúcleos) {
     uint cantidadTicks = 0; // "Relojazos"
     while (tidNúcleos.length) {
         cantidadTicks ++;
         // A cada núcleo se le envía un tick.
-        foreach (ref tidNúcleo; tidNúcleos.map!`a[1]`) { // El map saca el Tid.
+        foreach (ref tidNúcleo; tidNúcleos.map!`a.tid`) {
             tidNúcleo.send (Tick ());
         }
         uint [] terminaronEjecución = []; // Números de núcleo por eliminar.
@@ -37,11 +36,22 @@ void iniciarReloj (Tuple!(uint /*# de núcleo desde 0*/, Tid /*Identificador par
         }
         // Se eliminan de tidNúcleos los elementos de terminaronEjecución.
         foreach (finalizado; terminaronEjecución) {
-            auto posPorEliminar = tidNúcleos.map!`a[0]`.countUntil(finalizado);
-            assert (posPorEliminar != -1, `posPorEliminar debe estar en tidNúcleos`);
-            tidNúcleos = tidNúcleos.remove (posPorEliminar);
+            auto índicePorEliminar = 
+                tidNúcleos
+                .map!`a.identificador`
+                .countUntil(finalizado);
+            assert (índicePorEliminar != -1
+            /**/ , `índicePorEliminar debe estar en tidNúcleos`);
+            // Se actualiza el array.
+            tidNúcleos = tidNúcleos.remove (índicePorEliminar);
         }
     }
     import std.stdio : writeln;
     debug writeln (`Finalizó ejecución con `, cantidadTicks, ` ticks.`);
+}
+
+struct HiloDeNúcleoConIdentificador {
+    Tid tid;            /// Thread ID del hilo del núcleo.
+    uint identificador; /// Número desde 0 que identifica únicamente a cada
+                        /// hilo correspondiente a un núcleo.
 }
