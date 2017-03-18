@@ -1,4 +1,4 @@
-import std.concurrency : spawn, Tid, thisTid;
+import std.concurrency : spawn, thisTid;
 
 void main ()
 {
@@ -8,14 +8,14 @@ void main ()
     rellenarMemoria (programa);
     import std.stdio : writeln;
     writeln ("Memoria al iniciar ejecución: \n", memoriaPrincipal, '\n');
-    auto tidNúcleo = spawn (&iniciarEjecución, thisTid, 0, bloqueInicioInstrucciones);
-    import reloj : iniciarReloj, HiloDeNúcleoConIdentificador;
-    iniciarReloj ([HiloDeNúcleoConIdentificador(tidNúcleo, 0)]);
+    import reloj : Reloj, HiloDeNúcleoConIdentificador;
+    Reloj reloj = new Reloj ();
+    auto tidNúcleo = spawn (&iniciarEjecución, 0, bloqueInicioInstrucciones);
+    reloj.iniciar ([HiloDeNúcleoConIdentificador(tidNúcleo, 0)]);
 }
 
-// Tid son identificadores de cada hilo.
-void iniciarEjecución (Tid tidPadre, uint númeroNúcleo, uint contadorPrograma) {
+void iniciarEjecución (uint númeroNúcleo, uint contadorPrograma) {
     import nucleo;
-    Núcleo núcleo = new Núcleo (contadorPrograma, tidPadre, númeroNúcleo);
+    Núcleo núcleo = new Núcleo (contadorPrograma, númeroNúcleo);
     núcleo.ejecutar;
 }

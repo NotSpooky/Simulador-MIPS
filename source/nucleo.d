@@ -5,23 +5,21 @@ import std.conv : to;
 alias palabra = uint;
 
 final class Núcleo {
-    import std.concurrency : Tid, receiveOnly, send, thisTid;
-    this (uint contadorDePrograma, Tid tidReloj, uint númeroNúcleo) {
+    this (uint contadorDePrograma, uint númeroNúcleo /*Identificador*/) {
         this.contadorDePrograma = contadorDePrograma;
         import bus : busInstrucciones, busDatos;
         cachéInstrucciones = new Caché (busInstrucciones);
         cachéDatos         = new Caché (busDatos);
-        this.tidReloj      = tidReloj;
         this.númeroNúcleo  = númeroNúcleo;
     }
     @disable this ();
     uint contadorDePrograma; /// Tiene el número de bloque.
     Registros registros;
     import memorias : Caché;
-    Caché     cachéDatos         = null;
-    Caché     cachéInstrucciones = null;
-    Tid       tidReloj;
-    uint      númeroNúcleo;
+    Caché      cachéDatos         = null;
+    Caché      cachéInstrucciones = null;
+    uint       númeroNúcleo;
+
     invariant {
         import memorias : bloqueInicioInstrucciones, bloqueFinInstrucciones;
         assert (contadorDePrograma >= bloqueInicioInstrucciones
@@ -34,22 +32,19 @@ final class Núcleo {
         import interpretador : ExcepciónDeFinDePrograma;
         try {
             while (true) {
-                import reloj         : Tick, Respuesta;
-                receiveOnly!Tick; // Espera mensaje para empezar.
+                import reloj         : esperarTick, Respuesta;
+                esperarTick;
                 import interpretador : Instrucción, Código, interpretar;
                 auto instrucción = 
                 /**/ Instrucción (cachéInstrucciones [contadorDePrograma]);
                 this.interpretar (instrucción);
                 contadorDePrograma ++;
-                // Envía mensaje informando que finalizó.
-                auto tock = Respuesta (Respuesta.Tipo.tock, this.númeroNúcleo);
-                tidReloj.send (tock);
-
+                // Envía mensaje informando que finalizó (un tock).
+                Respuesta (Respuesta.Tipo.tock, this.númeroNúcleo).enviar;
             } 
         } catch (ExcepciónDeFinDePrograma) {
             import reloj : Respuesta;
-            auto mensajeFin = Respuesta (Respuesta.Tipo.terminóEjecución, this.númeroNúcleo);
-            tidReloj.send (mensajeFin);
+            Respuesta (Respuesta.Tipo.terminóEjecución, this.númeroNúcleo).enviar;
             return;
         }
     }
