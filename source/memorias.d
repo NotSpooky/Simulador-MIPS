@@ -13,13 +13,16 @@ shared static Bloque!(Tipo.memoria) [64] memoriaPrincipal;
 
 /// Se ejecuta al inicio para llenar la memoria con enteros.
 /// Sirve para colocar más fácilmente los datos leídos de un archivo.
-static void rellenarMemoria (int [][] valoresRaw) {
+static void rellenarMemoria (palabra [] valoresRaw) {
     auto maxPos = valoresRaw.length + bloqueInicioInstrucciones;
     assert (maxPos <= bloqueFinInstrucciones
     /**/ , `Instrucciones fuera de límite: ` ~ maxPos.to!string);
-    foreach (uint offset, valorRaw; valoresRaw) {
-        auto numBloque = bloqueInicioInstrucciones + offset;
-        memoriaPrincipal [numBloque].palabras = valorRaw;
+    import std.range : chunks;
+    uint offsetDeBloque = 0;
+    foreach (valorRaw; valoresRaw.chunks (4)) {
+        auto numBloque = bloqueInicioInstrucciones + offsetDeBloque;
+        memoriaPrincipal [numBloque].palabras = valorRaw.to!(palabra [4]);
+        offsetDeBloque ++;
     }
 }
 
@@ -39,29 +42,32 @@ class Caché {
     Bloque!(Tipo.caché) [bloquesPorCaché] bloques;
     shared Bus busAccesoAMemoria;
 
-    /// Se indexa igual que la memoria.
+    /// Se indexa igual que la memoria, pero índice es por palabra, no por bloque.
     auto opIndex (size_t índiceEnMemoria) {
+        auto numBloqueMem = índiceEnMemoria / palabrasPorBloque;
+        auto numPalabra   = índiceEnMemoria % palabrasPorBloque;
         foreach (bloque; bloques) {
-            if (bloque.válido && bloque.posEnMemoria == índiceEnMemoria) {
-                return bloque;
+            if (bloque.válido && bloque.bloqueEnMemoria == numBloqueMem) {
+                return bloque [numPalabra];
             }
         }
         // No se encontró.
-        return traerDeMemoria (índiceEnMemoria);
+        return traerDeMemoria (numBloqueMem) [numPalabra];
     }
-    // Lol duplicación de código.
-    /// Asigna un valor a memoria.
-    /// Se usa: estaCaché [numBloqueMemoria, numPalabraEnBloque] = porColocar.
-    void opIndexAssign (palabra porColocar, size_t numBloqueMemoria, size_t numPalabraEnBloque) {
-        assert (numPalabraEnBloque < palabrasPorBloque);
+    /// Asigna un valor a memoria. Usa de índice el número de palabra,
+    /// no bloque ni byte.
+    void opIndexAssign (palabra porColocar, size_t índiceEnMemoria) {
+        auto numBloqueMem = índiceEnMemoria / palabrasPorBloque;
+        auto numPalabra   = índiceEnMemoria % palabrasPorBloque;
         // Se coloca en la caché si está.
         foreach (ref bloque; bloques) {
-            if (bloque.válido && bloque.posEnMemoria == numBloqueMemoria) {
-                bloque.palabras [numPalabraEnBloque] = porColocar;
+            if (bloque.válido && bloque.bloqueEnMemoria == numBloqueMem) {
+                bloque.palabras [numPalabra] = porColocar;
             }
         }
+        assert (0, `TO DO: Write a caché.`);
         // Se coloca en memoria usando el bus aunque no esté en caché.
-        this.busAccesoAMemoria [numBloqueMemoria, numPalabraEnBloque] = porColocar;
+        //this.busAccesoAMemoria [numBloqueMemoria, numPalabraEnBloque] = porColocar;
     }
 
     /// Usa el bus para accesar la memoria y reemplaza una bloque de esta caché.
@@ -92,18 +98,15 @@ struct Bloque (Tipo tipo) {
         // Es memoria, se inicializa con 1s.
         palabra [palabrasPorBloque] palabras = 1;
     } else {
-        pragma (msg, `Preguntar si para usar un dato de la caché de otro núcleo`
-        /**/ ~ ` hay que esperar a que pase el dato a memoria y luego`
-        /**/ ~ ` leerlo de ahí.`);
         // Es caché, se inicializa con 0s.
         palabra [palabrasPorBloque] palabras = 0;
         bool válido                          = false;
-        uint posEnMemoria                    = 0;
+        uint bloqueEnMemoria                 = 0;
         /// Constructor para convertir bloques de memoria a bloques de caché.
-        this (palabra [palabrasPorBloque] palabras, uint posEnMemoria) {
-            this.palabras     = palabras;
-            this.válido       = true;
-            this.posEnMemoria = posEnMemoria;
+        this (palabra [palabrasPorBloque] palabras, uint bloqueEnMemoria) {
+            this.palabras        = palabras;
+            this.válido          = true;
+            this.bloqueEnMemoria = bloqueEnMemoria;
         }
     }
     alias palabras this;

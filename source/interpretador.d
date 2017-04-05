@@ -5,20 +5,21 @@ import std.conv : to;
 struct Instrucción {
     pragma (msg, `OJO: Preguntar por el tamaño de las instrucciones`);
     Código código;
-    int rf1;
-    int rf2;
-    int inm; // Puede ser negativo y mayor que 255.
+    byte rf1;
+    byte rf2;
+    byte inm;
     @disable this ();
-    import memorias : Bloque, Tipo;
-    @safe this (Bloque!(Tipo.caché) memoriaRaw) {
-        this.código = memoriaRaw [0].to!Código;
-        this.rf1    = memoriaRaw [1];
-        this.rf2    = memoriaRaw [2];
-        this.inm    = memoriaRaw [3];
+    import memorias : Bloque, Tipo, palabra;
+    @safe this (palabra palabraInstrucción) {
+        import std.conv : to;
+        this.código = (palabraInstrucción >> 24).to!Código;
+        this.rf1    = ((palabraInstrucción >> 16) & 0xFF).to!byte;
+        this.rf2    = ((palabraInstrucción >> 8) & 0xFF).to!byte;
+        this.inm    = cast (byte) (palabraInstrucción & 0xFF);
     }
 }
 
-enum Código : int {
+enum Código : byte {
     DADDI = 8 ,
     DADD  = 32,
     DSUB  = 34,
@@ -109,7 +110,7 @@ static void interpretar (Núcleo núcleo, Instrucción instrucción) {
             auto posición = posBase / bytesPorPalabra;
             assert (posición >= 0);
             núcleo.registros [rf2]
-            /**/ = núcleo.cachéDatos [posición / bytesPorPalabra][posición % bytesPorPalabra];
+            /**/ = núcleo.cachéDatos [posición];
             break;
         case Código.SW:
             // Memoria (n + (Ry)) <-- Rx 
@@ -122,7 +123,7 @@ static void interpretar (Núcleo núcleo, Instrucción instrucción) {
             auto posición = posBase / bytesPorPalabra;
             assert (posición >= 0);
             núcleo
-                .cachéDatos [posición / bytesPorPalabra, posición % bytesPorPalabra] = Rx;
+                .cachéDatos [posición] = Rx;
             break;
         case Código.FIN:
             // Stop stop stop stop.

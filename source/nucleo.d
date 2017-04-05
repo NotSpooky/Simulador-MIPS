@@ -13,7 +13,7 @@ final class Núcleo {
         this.númeroNúcleo  = númeroNúcleo;
     }
     @disable this ();
-    uint contadorDePrograma; /// Tiene el número de bloque.
+    uint contadorDePrograma; /// Tiene el número de instrucción, no de bloque.
     Registros registros;
     import memorias : Caché;
     Caché      cachéDatos         = null;
@@ -21,22 +21,25 @@ final class Núcleo {
     uint       númeroNúcleo;
 
     invariant {
-        import memorias : bloqueInicioInstrucciones, bloqueFinInstrucciones;
-        assert (contadorDePrograma >= bloqueInicioInstrucciones
-        /**/ && contadorDePrograma <= bloqueFinInstrucciones,
+        import memorias : bloqueInicioInstrucciones, bloqueFinInstrucciones
+        /**/ , palabrasPorBloque;
+        assert (
+        /**/ contadorDePrograma >= bloqueInicioInstrucciones * palabrasPorBloque
+        /**/ && contadorDePrograma <= bloqueFinInstrucciones * palabrasPorBloque,
         /**/ `ContadorDePrograma fuera de rango permitido: ` 
         /**/ ~ contadorDePrograma.to!string);
     }
 
     void ejecutar () {
-        import interpretador : ExcepciónDeFinDePrograma;
+        import interpretador : ExcepciónDeFinDePrograma, Instrucción, Código
+        /**/ , interpretar;
         try {
             while (true) {
-                import reloj         : esperarTick, Respuesta;
+                import reloj : esperarTick, Respuesta;
                 esperarTick;
-                import interpretador : Instrucción, Código, interpretar;
                 auto instrucción = 
                 /**/ Instrucción (cachéInstrucciones [contadorDePrograma]);
+                // Usa UFCS, está definido en interpretador.
                 this.interpretar (instrucción);
                 contadorDePrograma ++;
                 // Envía mensaje informando que finalizó (un tock).
@@ -60,13 +63,4 @@ struct Registros {
     }
     alias registros this;
 }
-
-unittest {
-    Núcleo núcleo = new Núcleo ();
-    with (núcleo) {
-        registros [1] = 3;
-        assert (registros [1] == 3);
-    }
-}
-
 
