@@ -7,7 +7,7 @@ enum bytesPorPalabra           = palabra.sizeof;
 enum bloqueInicioInstrucciones = 24;
 enum bloqueFinInstrucciones    = 63;
 enum palabrasPorBloque         = 4;
-enum bloquesPorCaché           = 4;
+enum bloquesPorCaché           = [4 /*L1*/, 8 /*L2*/];
 
 shared static Bloque!(Tipo.memoria) [64] memoriaPrincipal;
 
@@ -19,14 +19,17 @@ static void rellenarMemoria (palabra [] valoresRaw) {
     /**/ , `Instrucciones fuera de límite: ` ~ maxPos.to!string);
     import std.range : chunks;
     uint offsetDeBloque = 0;
-    foreach (valorRaw; valoresRaw.chunks (4)) {
+    foreach (valorRaw; valoresRaw.chunks (palabrasPorBloque)) {
         auto numBloque = bloqueInicioInstrucciones + offsetDeBloque;
-        memoriaPrincipal [numBloque].palabras = valorRaw.to!(palabra [4]);
+        memoriaPrincipal [numBloque].palabras 
+        /**/ = valorRaw.to!(palabra [palabrasPorBloque]);
         offsetDeBloque ++;
     }
 }
-
-class Caché {
+alias CachéL1 = Caché!1;
+alias CachéL2 = Caché!2;
+class Caché (uint nivel) {
+    static assert (nivel == 1 || nivel == 2);
     pragma (msg, `OJO Preguntar si las cachés de instrucciones se pueden `
     /**/ ~ `escribir, y en ese caso qué estrategia usan.`);
     pragma (msg, `OJO Preguntar si las cachés son como las de un procesador `
@@ -39,7 +42,7 @@ class Caché {
         this.busAccesoAMemoria = busAccesoAMemoria;
     }
 
-    Bloque!(Tipo.caché) [bloquesPorCaché] bloques;
+    Bloque!(Tipo.caché) [bloquesPorCaché [nivel - 1] ] bloques;
     shared Bus busAccesoAMemoria;
 
     /// Se indexa igual que la memoria, pero índice es por palabra, no por bloque.
@@ -90,7 +93,7 @@ class Caché {
     private uint m_índiceParaReemplazar; // Usado para víctimaParaReemplazo.
 }
 
-enum Tipo {memoria, caché}
+enum Tipo {memoria, caché};
 struct Bloque (Tipo tipo) {
     static if (tipo == Tipo.memoria) {
         pragma (msg, `OJO Preguntar si el inicializar memoria en 1s es 11111 `

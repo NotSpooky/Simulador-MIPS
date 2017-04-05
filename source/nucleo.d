@@ -8,17 +8,17 @@ final class Núcleo {
     this (uint contadorDePrograma, uint númeroNúcleo /*Identificador*/) {
         this.contadorDePrograma = contadorDePrograma;
         import bus : busInstrucciones, busDatos;
-        cachéInstrucciones = new Caché (busInstrucciones);
-        cachéDatos         = new Caché (busDatos);
+        cachéInstrucciones = new CachéL1 (busInstrucciones);
+        cachéDatos         = new CachéL1 (busDatos);
         this.númeroNúcleo  = númeroNúcleo;
     }
     @disable this ();
     uint contadorDePrograma; /// Tiene el número de instrucción, no de bloque.
     Registros registros;
-    import memorias : Caché;
-    Caché      cachéDatos         = null;
-    Caché      cachéInstrucciones = null;
-    uint       númeroNúcleo;
+    import memorias : CachéL1;
+    CachéL1   cachéDatos         = null;
+    CachéL1   cachéInstrucciones = null;
+    uint      númeroNúcleo;
 
     invariant {
         import memorias : bloqueInicioInstrucciones, bloqueFinInstrucciones
