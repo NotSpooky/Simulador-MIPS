@@ -42,11 +42,12 @@ class Caché (uint nivel) {
         this.busAccesoAMemoria = busAccesoAMemoria;
     }
 
-    Bloque!(Tipo.caché) [bloquesPorCaché [nivel - 1] ] bloques;
+    Bloque!(Tipo.caché) [ bloquesPorCaché [nivel - 1] ] bloques;
     shared Bus busAccesoAMemoria;
 
     /// Se indexa igual que la memoria, pero índice es por palabra, no por bloque.
-    auto opIndex (size_t índiceEnMemoria) {
+    /// Ejemplo de uso: auto a = caché [índiceEnMemoria];
+    auto opIndex (uint índiceEnMemoria) {
         auto numBloqueMem = índiceEnMemoria / palabrasPorBloque;
         auto numPalabra   = índiceEnMemoria % palabrasPorBloque;
         foreach (bloque; bloques) {
@@ -59,28 +60,33 @@ class Caché (uint nivel) {
     }
     /// Asigna un valor a memoria. Usa de índice el número de palabra,
     /// no bloque ni byte.
-    void opIndexAssign (palabra porColocar, size_t índiceEnMemoria) {
+    void opIndexAssign (palabra porColocar, uint índiceEnMemoria) {
         auto numBloqueMem = índiceEnMemoria / palabrasPorBloque;
         auto numPalabra   = índiceEnMemoria % palabrasPorBloque;
-        // Se coloca en la caché si está.
-        foreach (ref bloque; bloques) {
-            if (bloque.válido && bloque.bloqueEnMemoria == numBloqueMem) {
-                bloque.palabras [numPalabra] = porColocar;
-            }
+        auto bloque       = & bloques [numBloqueMem % bloques.length];
+        if (!bloque.válido || bloque.bloqueEnMemoria != numBloqueMem) {
+            // Miss, hay que traer de memoria.
+            traerDeMemoria (numBloqueMem);
         }
-        assert (0, `TO DO: Write a caché.`);
-        // Se coloca en memoria usando el bus aunque no esté en caché.
-        //this.busAccesoAMemoria [numBloqueMemoria, numPalabraEnBloque] = porColocar;
+        // Se coloca en la caché.
+        bloque.palabras [numPalabra] = porColocar;
     }
 
     /// Usa el bus para accesar la memoria y reemplaza una bloque de esta caché.
     /// Retorna el bloque obtenido.
     /// Desde otros módulos accesar por índice, no usar esta función.
-    private Bloque!(Tipo.caché) traerDeMemoria (size_t índice) {
-        auto bloqueDeBus = this.busAccesoAMemoria [índice];
-        auto bloquePorColocar = Bloque!(Tipo.caché) (bloqueDeBus, índice.to!uint);
-        this.bloques [víctimaParaReemplazo] = bloquePorColocar;
-        return bloquePorColocar;
+    private Bloque!(Tipo.caché) traerDeMemoria (uint numBloqueMem) {
+        assert (numBloqueMem < memoriaPrincipal.length);
+        auto bloqueActual = bloques [numBloqueMem % bloques.length];
+        if (bloqueActual.sucio) { // Si está dirty, hay que guardarlo en memoria.
+            assert (bloqueActual.válido, `Bloques sucios deben ser válidos`);
+            busAccesoAMemoria [numBloqueMem] = bloqueActual;
+        }
+        auto bloqueTraidoDeBus = this.busAccesoAMemoria [numBloqueMem];
+        auto bloquePorColocarEnCaché
+        /**/ = Bloque!(Tipo.caché) (cast (palabra [4]) bloqueTraidoDeBus.palabras, numBloqueMem);
+        this.bloques [numBloqueMem % bloques.length] = bloquePorColocarEnCaché;
+        return bloquePorColocarEnCaché;
     }
 
     /// Retorna el índice de la posición de la caché que debe reemplazarse.
@@ -100,10 +106,12 @@ struct Bloque (Tipo tipo) {
         /**/ ~ `o cada palabra con un 1`);
         // Es memoria, se inicializa con 1s.
         palabra [palabrasPorBloque] palabras = 1;
+        alias palabras this; // Permite usar el operador de índice.
     } else {
         // Es caché, se inicializa con 0s.
         palabra [palabrasPorBloque] palabras = 0;
         bool válido                          = false;
+        bool sucio                           = false;
         uint bloqueEnMemoria                 = 0;
         /// Constructor para convertir bloques de memoria a bloques de caché.
         this (palabra [palabrasPorBloque] palabras, uint bloqueEnMemoria) {
@@ -111,7 +119,40 @@ struct Bloque (Tipo tipo) {
             this.válido          = true;
             this.bloqueEnMemoria = bloqueEnMemoria;
         }
+        auto opIndex (uint numPalabra) {
+            assert (numPalabra < palabras.length);
+            return palabras [numPalabra];
+        }
+
+        auto opIndexAssign (palabra porColocar, uint numPalabra) {
+            assert (numPalabra < palabras.length);
+            this.sucio = true;
+            palabras [numPalabra] = porColocar;
+        }
     }
-    alias palabras this;
+}
+
+/// Convierte un rango de 4 enteros de 8 bits en una palabra.
+palabra toPalabra (T)(T porConvertir) {
+    static assert (palabra.sizeof == 4 && byte.sizeof == 1);
+    assert (porConvertir.length == 4, `Se esperaba recibir un rango de 4 bytes.`);
+    import std.algorithm : all;
+    // Se permiten conversiones implícitas a bytes positivos hasta 255.
+    assert (porConvertir.all!`a < ubyte.max && a > byte.min`
+    /**/ , `Valor en archivo fuera de rango: ` ~ porConvertir.to!string);
+    // Se usa & 0xFF para evitar los 1s al inicio de los negativos.
+    return ((porConvertir [0] & 0xFF) << 24) | ((porConvertir [1] & 0xFF) << 16) 
+    /**/ | ((porConvertir [2] & 0xFF) << 8) | (porConvertir [3] & 0xFF);
+    
+}
+
+/// Convierte una palabra a 4 bytes. El opuesto de toPalabra.
+auto toBytes (palabra porConvertir) {
+    return [
+    /**/ cast (byte) (porConvertir >> 24),
+    /**/ cast (byte) ((porConvertir >> 16) & 0xFF),
+    /**/ cast (byte) ((porConvertir >> 8) & 0xFF),
+    /**/ cast (byte) (porConvertir & 0xFF)
+    ];
 }
 

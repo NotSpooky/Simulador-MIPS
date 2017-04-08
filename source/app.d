@@ -3,7 +3,7 @@ import std.concurrency : spawn, thisTid;
 void main ()
 {
     import lectorarchivos : leerArchivo;
-    import memorias : rellenarMemoria, bloqueInicioInstrucciones
+    import memorias : rellenarMemoria, bloqueInicioInstrucciones, toBytes
     /**/ , memoriaPrincipal, palabrasPorBloque;
     auto programa = `source/test.txt`.leerArchivo;
     rellenarMemoria (programa);

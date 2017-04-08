@@ -9,13 +9,14 @@ struct Instrucción {
     byte rf2;
     byte inm;
     @disable this ();
-    import memorias : Bloque, Tipo, palabra;
+    import memorias : Bloque, Tipo, palabra, toBytes;
     @safe this (palabra palabraInstrucción) {
         import std.conv : to;
-        this.código = (palabraInstrucción >> 24).to!Código;
-        this.rf1    = ((palabraInstrucción >> 16) & 0xFF).to!byte;
-        this.rf2    = ((palabraInstrucción >> 8) & 0xFF).to!byte;
-        this.inm    = cast (byte) (palabraInstrucción & 0xFF);
+        auto enBytes = palabraInstrucción.toBytes;
+        this.código = enBytes [0].to!Código;
+        this.rf1    = enBytes [1];
+        this.rf2    = enBytes [2];
+        this.inm    = enBytes [3];
     }
 }
 
@@ -102,28 +103,27 @@ static void interpretar (Núcleo núcleo, Instrucción instrucción) {
             break;
         case Código.LW:
             // Rx <-- Memoria (n + (Ry))
-            auto Ry = núcleo.registros [rf1];
-            auto posBase = Ry + inm;
+            int Ry = núcleo.registros [rf1];
+            int posBase = Ry + inm;
             import memorias : memoriaPrincipal, bytesPorPalabra;
             assert ((posBase % bytesPorPalabra) == 0
             /**/ , `LW no alineado: ` ~ posBase.to!string);
-            auto posición = posBase / bytesPorPalabra;
-            assert (posición >= 0);
+            uint posición = (posBase / bytesPorPalabra).to!int;
+            assert (posición >= 0 && posición < 256);
             núcleo.registros [rf2]
             /**/ = núcleo.cachéDatos [posición];
             break;
         case Código.SW:
             // Memoria (n + (Ry)) <-- Rx 
-            auto Rx = núcleo.registros [rf2];
-            auto Ry = núcleo.registros [rf1];
-            auto posBase = Ry + inm;
+            int Rx = núcleo.registros [rf2];
+            int Ry = núcleo.registros [rf1];
+            int posBase = Ry + inm;
             import memorias : memoriaPrincipal, bytesPorPalabra;
             assert ((posBase % bytesPorPalabra) == 0
             /**/ , `SW no alineado: ` ~ posBase.to!string);
-            auto posición = posBase / bytesPorPalabra;
-            assert (posición >= 0);
-            núcleo
-                .cachéDatos [posición] = Rx;
+            uint posición = (posBase / bytesPorPalabra).to!int;
+            assert (posición >= 0 && posición < 256);
+            núcleo.cachéDatos [posición] = Rx;
             break;
         case Código.FIN:
             // Stop stop stop stop.
