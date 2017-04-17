@@ -13,6 +13,10 @@ void main ()
     Reloj reloj = new Reloj ();
     auto tidNúcleo = spawn (&iniciarEjecución
     /**/ , bloqueInicioInstrucciones * palabrasPorBloque, últimoNumNúcleo ++);
+    import tui : TUI;
+    TUI interfazDeUsuario = new TUI ();
+    interfazDeUsuario.actualizarMemoriaMostrada;
+    interfazDeUsuario.mostrar ("Ola sheep.");
     // Se le envían los núcleos al reloj para que los sincronice.
     reloj.iniciar ([HiloDeNúcleoConIdentificador(tidNúcleo, 0)]);
 }

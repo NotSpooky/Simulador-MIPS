@@ -32,9 +32,6 @@ class Caché (uint nivel) {
     static assert (nivel == 1 || nivel == 2);
     pragma (msg, `OJO Preguntar si las cachés de instrucciones se pueden `
     /**/ ~ `escribir, y en ese caso qué estrategia usan.`);
-    pragma (msg, `OJO Preguntar si las cachés son como las de un procesador `
-    /**/ ~ `usual, que solo pueden tener ciertas direcciones específicas o si `
-    /**/ ~ `pueden tener 4 bloques arbitrarios.`);
     @disable this ();
     import bus : Bus;
     this (shared Bus busAccesoAMemoria) {
@@ -149,10 +146,20 @@ palabra toPalabra (T)(T porConvertir) {
 /// Convierte una palabra a 4 bytes. El opuesto de toPalabra.
 auto toBytes (palabra porConvertir) {
     return [
-    /**/ cast (byte) (porConvertir >> 24),
+    /**/ cast (byte) ( porConvertir >> 24),
     /**/ cast (byte) ((porConvertir >> 16) & 0xFF),
     /**/ cast (byte) ((porConvertir >> 8) & 0xFF),
-    /**/ cast (byte) (porConvertir & 0xFF)
+    /**/ cast (byte) ( porConvertir & 0xFF)
     ];
 }
 
+auto memoriaPrincipalEnBytes () {
+    byte [] porRetornar = [];
+    foreach (bloqueMem; memoriaPrincipal) {
+        auto palabrasDelBloque = bloqueMem.palabras;
+        foreach (palabra; palabrasDelBloque) {
+            porRetornar ~= palabra.toBytes;
+        }
+    }
+    return porRetornar;
+}
