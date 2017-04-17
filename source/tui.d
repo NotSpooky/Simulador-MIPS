@@ -44,8 +44,8 @@ class TUI {
         /**/, `Insuficiente espacio horizontal para imprimir`);
         import std.range : repeat, take;
         terminal.moveTo (ubicaciónDeMemoria [0], ubicaciónDeMemoria [1]);
-        terminal.write ('┌', '─'.repeat.take (espacioParaBytes), '┐');
-        uint posDerechaMarco = ubicaciónDeMemoria [0] + espacioParaBytes + 1 /*Marco iz*/;
+        terminal.write ('┌', '─'.repeat.take (bytesPorLinea * 3), '┐');
+        uint posDerechaMarco = ubicaciónDeMemoria [0] + bytesPorLinea * 3 + 1 /*Marco iz*/;
         foreach (i; 0 .. cantidadLineasMemoria) {
             auto columna = ubicaciónDeMemoria [1] + i + 1;
             // Se coloca el número de byte a la izquierda en hexadecimal.
@@ -59,7 +59,7 @@ class TUI {
         }
         terminal.moveTo (ubicaciónDeMemoria [0]
         /**/ , ubicaciónDeMemoria [1] + cantidadLineasMemoria + 1);
-        terminal.write ('└', '─'.repeat.take (espacioParaBytes), '┘');
+        terminal.write ('└', '─'.repeat.take (bytesPorLinea * 3), '┘');
     }
     // Retorna el número de fila siguiente al último utilizado para mostrar la memoria.
     private uint líneaMensajeInstrucciones () {
