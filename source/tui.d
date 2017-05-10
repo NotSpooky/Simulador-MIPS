@@ -34,8 +34,18 @@ class TUI {
         moverCursorASalida;
         terminal.flush;
     }
-    void mostrar (string mensaje) {
-        terminal.writeln (mensaje);
+    void mostrar (T...)(T mensaje) {
+        moverCursorASalida;
+        pragma (msg, `TO DO: Limpiar la línea de salida y separarla en 1 para cada tipo de`
+        /**/ ~ ` salida.`);
+        import std.conv : text;
+        import std.algorithm : min;
+        import std.range : repeat, take, array;
+        string toWrite = text(mensaje);
+        toWrite = toWrite [0..min(toWrite.length, terminal.width)];
+        toWrite ~= ' '.repeat.take(terminal.width - toWrite.length).array;
+        terminal.writeln (toWrite);
+        terminal.flush;
     }
     private void ponerMarcoMemoria () {
         assert (ubicaciónDeMemoria [0] < terminal.width
@@ -51,8 +61,9 @@ class TUI {
             // Se coloca el número de byte a la izquierda en hexadecimal.
             // El 1 es de marco de arriba.
             terminal.moveTo (ubicaciónDeMemoria [0] - 4, columna);
-            terminal.writef (`%03X`, i * bytesPorLinea);
-            terminal.moveTo (ubicaciónDeMemoria [0], columna);
+            terminal.color (Color.blue, Color.DEFAULT);
+            terminal.writef (`%03X `, i * bytesPorLinea);
+            terminal.color (Color.DEFAULT, Color.DEFAULT);
             terminal.write ('│');
             terminal.moveTo (posDerechaMarco, columna);
             terminal.write ('│');

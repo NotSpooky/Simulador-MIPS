@@ -38,9 +38,9 @@ enum Código : byte {
 }
 
 import nucleo : Núcleo;
-static void interpretar (Núcleo núcleo, Instrucción instrucción) {
-    import std.stdio : writeln;
-    debug writeln (`Ejecutando `, instrucción);
+import tui : TUI;
+static void interpretar (Núcleo núcleo, Instrucción instrucción, TUI salida) {
+    salida.mostrar(`Ejecutando `, instrucción);
     with (instrucción) final switch (código) {
         case Código.DADDI:
             // Rx <-- (Ry) + n
@@ -70,6 +70,9 @@ static void interpretar (Núcleo núcleo, Instrucción instrucción) {
             // Rx <-- (Ry) / (Rz)
             auto Ry = núcleo.registros [rf1];
             auto Rz = núcleo.registros [rf2];
+            if (Rz == 0) {
+                throw new ExcepciónDeFinDePrograma ();
+            }
             núcleo.registros [inm] = Ry / Rz;
             break;
         case Código.BEQZ:
@@ -92,7 +95,7 @@ static void interpretar (Núcleo núcleo, Instrucción instrucción) {
         case Código.JAL:
             // R31 <-- PC, PC += n
             assert (rf1 == 0 && rf2 == 0, `rf1 y rf2 deberían ser 0`);
-            núcleo.registros [31] = núcleo.contadorDePrograma;
+            núcleo.registros [31] = núcleo.contadorDePrograma ++;
             núcleo.contadorDePrograma += inm;
             break;
         case Código.JR:

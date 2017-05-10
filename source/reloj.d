@@ -27,6 +27,7 @@ final class Reloj {
     this () {
         tidReloj = thisTid;
     }
+    import tui : TUI;
     /***************************************************************************
      * Envía `ticks` a todos los núcleos y espera sus `tocks` 
      * para sincronizarlos.
@@ -34,7 +35,7 @@ final class Reloj {
      * ese Tid.
      * Deja de ejecutar cuando todos los núcleos anunciaron su fin.
      **************************************************************************/
-    void iniciar (HiloDeNúcleoConIdentificador [] tidNúcleos) {
+    void iniciar (HiloDeNúcleoConIdentificador [] tidNúcleos, TUI salida) {
         import std.algorithm : countUntil, remove, map;
         uint cantidadTicks = 0; // "Relojazos"
         while (tidNúcleos.length) {
@@ -66,8 +67,7 @@ final class Reloj {
                 tidNúcleos = tidNúcleos.remove (índicePorEliminar);
             }
         }
-        import std.stdio : writeln;
-        debug writeln (`Finalizó ejecución con `, cantidadTicks, ` ticks.`);
+        salida.mostrar (`Finalizó ejecución con `, cantidadTicks, ` ticks.`);
     }
 }
 

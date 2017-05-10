@@ -30,8 +30,6 @@ alias CachéL1 = Caché!1;
 alias CachéL2 = Caché!2;
 class Caché (uint nivel) {
     static assert (nivel == 1 || nivel == 2);
-    pragma (msg, `OJO Preguntar si las cachés de instrucciones se pueden `
-    /**/ ~ `escribir, y en ese caso qué estrategia usan.`);
     @disable this ();
     import bus : Bus;
     this (shared Bus busAccesoAMemoria) {

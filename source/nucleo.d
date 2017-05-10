@@ -30,17 +30,16 @@ final class Núcleo {
         /**/ ~ contadorDePrograma.to!string);
     }
 
-    void ejecutar () {
-        import interpretador : ExcepciónDeFinDePrograma, Instrucción, Código
-        /**/ , interpretar;
+    import tui : TUI;
+    void ejecutar (TUI salida) {
+        import interpretador : ExcepciónDeFinDePrograma, Instrucción, Código, interpretar;
         try {
             while (true) {
                 import reloj : esperarTick, Respuesta;
                 esperarTick;
                 auto instrucción = 
                 /**/ Instrucción (cachéInstrucciones [contadorDePrograma]);
-                // Usa UFCS, está definido en interpretador.
-                this.interpretar (instrucción);
+                interpretar (this, instrucción, salida);
                 contadorDePrograma ++;
                 // Envía mensaje informando que finalizó (un tock).
                 Respuesta (Respuesta.Tipo.tock, this.númeroNúcleo).enviar;
