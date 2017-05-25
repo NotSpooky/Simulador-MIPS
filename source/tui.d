@@ -84,6 +84,7 @@ class TUI {
 
     /// Recibe un carácter del usuario y lo retorna.
     auto esperarUsuario () {
+        actualizarMemoriaMostrada;
         auto toRet = terminal.getline;
         return toRet;
     }
