@@ -84,10 +84,17 @@ class TUI {
 
     /// Recibe un carácter del usuario y lo retorna.
     auto esperarUsuario () {
-        actualizarMemoriaMostrada;
-        auto toRet = terminal.getline;
-        return toRet;
+        if (this.modoAvance == ModoAvance.manual) {
+            actualizarMemoriaMostrada;
+            auto leido = terminal.getline;
+            import std.regex;
+            if (!leido.matchFirst (`^c\s*$`).empty) {
+                this.modoAvance = ModoAvance.continuo;
+            }
+        }
     }
+    private enum ModoAvance {continuo, manual};
+    private ModoAvance modoAvance = ModoAvance.manual;
     /// Corta el mensaje para que quepa en una línea de la terminal
     private void cortarMensaje (ref string mensaje) {
         import std.algorithm : min;

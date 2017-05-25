@@ -24,10 +24,8 @@ void esperarTick () {
 }
 
 final class Reloj {
-    enum ModoTicks {manual, automático};
-    this (ModoTicks modoTicks) {
+    this () {
         tidReloj = thisTid;
-        this.modoTicks = modoTicks;
     }
     import tui : TUI;
     /***************************************************************************
@@ -57,9 +55,7 @@ final class Reloj {
                     }
                 );
             }
-            if (this.modoTicks == ModoTicks.manual) {
-                interfaz.esperarUsuario ();
-            }
+            interfaz.esperarUsuario ();
             // Se eliminan de tidNúcleos los elementos de terminaronEjecución.
             foreach (finalizado; terminaronEjecución) {
                 auto índicePorEliminar = 
@@ -73,7 +69,6 @@ final class Reloj {
             }
         }
     }
-    private ModoTicks modoTicks;
 }
 
 struct HiloDeNúcleoConIdentificador {
