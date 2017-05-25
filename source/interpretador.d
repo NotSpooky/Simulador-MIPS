@@ -3,7 +3,6 @@ module interpretador;
 import std.conv : to;
 
 struct Instrucción {
-    pragma (msg, `OJO: Preguntar por el tamaño de las instrucciones`);
     Código código;
     byte rf1;
     byte rf2;
@@ -40,7 +39,7 @@ enum Código : byte {
 import nucleo : Núcleo;
 import tui : TUI;
 static void interpretar (Núcleo núcleo, Instrucción instrucción, TUI salida) {
-    salida.mostrar(`Ejecutando `, instrucción);
+    salida.mostrar(núcleo.númeroNúcleo, `Ejecutando `, instrucción);
     with (instrucción) final switch (código) {
         case Código.DADDI:
             // Rx <-- (Ry) + n

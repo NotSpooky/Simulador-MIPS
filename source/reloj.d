@@ -67,7 +67,7 @@ final class Reloj {
                 tidNúcleos = tidNúcleos.remove (índicePorEliminar);
             }
         }
-        salida.mostrar (`Finalizó ejecución con `, cantidadTicks, ` ticks.`);
+        //salida.mostrar (`Finalizó ejecución con `, cantidadTicks, ` ticks.`);
     }
 }
 

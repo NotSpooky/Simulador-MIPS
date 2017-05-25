@@ -97,8 +97,6 @@ class Caché (uint nivel) {
 enum Tipo {memoria, caché};
 struct Bloque (Tipo tipo) {
     static if (tipo == Tipo.memoria) {
-        pragma (msg, `OJO Preguntar si el inicializar memoria en 1s es 11111 `
-        /**/ ~ `o cada palabra con un 1`);
         // Es memoria, se inicializa con 1s.
         palabra [palabrasPorBloque] palabras = 1;
         alias palabras this; // Permite usar el operador de índice.

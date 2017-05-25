@@ -3,9 +3,10 @@ module nucleo;
 import std.conv : to;
 
 alias palabra = uint;
-
+enum cantidadNúcleos = 2;
 final class Núcleo {
     this (uint contadorDePrograma, uint númeroNúcleo /*Identificador*/) {
+        assert (númeroNúcleo >= 0 && númeroNúcleo < cantidadNúcleos);
         this.contadorDePrograma = contadorDePrograma;
         import bus : busInstrucciones, busDatos;
         cachéInstrucciones = new CachéL1 (busInstrucciones);
