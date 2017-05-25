@@ -10,7 +10,7 @@ void main (string [] args)
     auto programa = (args.length > 1 ? args [1] : `source/test.txt`).leerArchivo;
     rellenarMemoria (programa);
     import reloj : Reloj, HiloDeNúcleoConIdentificador;
-    Reloj reloj = new Reloj ();
+    Reloj reloj = new Reloj (Reloj.ModoTicks.manual);
     interfazDeUsuario = new TUI ();
     auto tidNúcleo = spawn (&iniciarEjecución
     /**/ , bloqueInicioInstrucciones * palabrasPorBloque, últimoNumNúcleo ++);

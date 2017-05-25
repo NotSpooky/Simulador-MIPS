@@ -26,7 +26,7 @@ class TUI {
         ponerMarcoMemoria;
         mostrarInstruccionesUsuario;
         foreach (numNúcleo; 0..cantidadNúcleos) {
-            terminal.color (Color.blue, Color.DEFAULT);
+            terminal.color (Color.red, Color.DEFAULT);
             escribirEn (líneaSalidaNúcleos + (lineasSalidaPorNúcleo * numNúcleo), "Núcleo #", numNúcleo, ':');
             terminal.color (Color.DEFAULT, Color.DEFAULT);
         }
@@ -55,16 +55,6 @@ class TUI {
         }
         finEscritura;
     }
-    /// Corta el mensaje para que quepa en una línea de la terminal
-    void cortarMensaje (ref string mensaje) {
-        import std.algorithm : min;
-        mensaje = mensaje [0..min(mensaje.length, terminal.width)];
-    }
-    /// Retorna una hilera de n espacios.
-    string espacios (ulong cantidad) {
-        import std.range : repeat, take, array;
-        return ' '.repeat.take (cantidad).array;
-    }
     /// Limpia la línea número numLínea y le escribe el mensaje.
     void escribirEn (T ...)(uint númeroDeLínea, T mensajes) {
         import std.conv : text;
@@ -90,6 +80,22 @@ class TUI {
     /// Coloca un mensaje en la posición correspondiente al núcleo numNúcleo.
     void mostrar (T...)(uint numNúcleo, T mensaje) {
         escribirEn (líneaSalidaNúcleos + (numNúcleo * lineasSalidaPorNúcleo) + 1, mensaje);
+    }
+
+    /// Recibe un carácter del usuario y lo retorna.
+    auto esperarUsuario () {
+        auto toRet = terminal.getline;
+        return toRet;
+    }
+    /// Corta el mensaje para que quepa en una línea de la terminal
+    private void cortarMensaje (ref string mensaje) {
+        import std.algorithm : min;
+        mensaje = mensaje [0..min(mensaje.length, terminal.width)];
+    }
+    /// Retorna una hilera de n espacios.
+    private string espacios (ulong cantidad) {
+        import std.range : repeat, take, array;
+        return ' '.repeat.take (cantidad).array;
     }
     private void ponerMarcoMemoria () {
         assert (ubicaciónDeMemoria [0] < terminal.width

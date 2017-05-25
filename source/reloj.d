@@ -24,8 +24,10 @@ void esperarTick () {
 }
 
 final class Reloj {
-    this () {
+    enum ModoTicks {manual, automático};
+    this (ModoTicks modoTicks) {
         tidReloj = thisTid;
+        this.modoTicks = modoTicks;
     }
     import tui : TUI;
     /***************************************************************************
@@ -35,7 +37,7 @@ final class Reloj {
      * ese Tid.
      * Deja de ejecutar cuando todos los núcleos anunciaron su fin.
      **************************************************************************/
-    void iniciar (HiloDeNúcleoConIdentificador [] tidNúcleos, TUI salida) {
+    void iniciar (HiloDeNúcleoConIdentificador [] tidNúcleos, TUI interfaz) {
         import std.algorithm : countUntil, remove, map;
         uint cantidadTicks = 0; // "Relojazos"
         while (tidNúcleos.length) {
@@ -55,6 +57,9 @@ final class Reloj {
                     }
                 );
             }
+            if (this.modoTicks == ModoTicks.manual) {
+                interfaz.esperarUsuario ();
+            }
             // Se eliminan de tidNúcleos los elementos de terminaronEjecución.
             foreach (finalizado; terminaronEjecución) {
                 auto índicePorEliminar = 
@@ -67,8 +72,8 @@ final class Reloj {
                 tidNúcleos = tidNúcleos.remove (índicePorEliminar);
             }
         }
-        //salida.mostrar (`Finalizó ejecución con `, cantidadTicks, ` ticks.`);
     }
+    private ModoTicks modoTicks;
 }
 
 struct HiloDeNúcleoConIdentificador {
