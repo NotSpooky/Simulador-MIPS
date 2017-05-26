@@ -39,7 +39,9 @@ class TUI {
     /// Actualiza los datos dentro del marco de la memoria.
     void actualizarMemoriaMostrada () {
         import memorias : memoriaPrincipalEnBytes;
-        auto porMostrar = memoriaPrincipalEnBytes; // Lo convierte a slice
+        auto memoria = memoriaPrincipalEnBytes;
+        assert (filaInicialDeMemoria * bytesPorLinea < memoria.length);
+        auto porMostrar = memoria [filaInicialDeMemoria * bytesPorLinea..$]; // Lo convierte a slice
         bool quedaEspacio = true;
         foreach (i; 0..cantidadLineasMemoria) {
             auto posInicialX = ubicaciónDeMemoria [0] + 1 /* Marco izquierdo */;
@@ -85,16 +87,35 @@ class TUI {
     /// Recibe un carácter del usuario y lo retorna.
     auto esperarUsuario () {
         if (this.modoAvance == ModoAvance.manual) {
-            actualizarMemoriaMostrada;
-            auto leido = terminal.getline;
-            import std.regex;
-            if (!leido.matchFirst (`^c\s*$`).empty) {
-                this.modoAvance = ModoAvance.continuo;
+            while (true) {
+                actualizarMemoriaMostrada;
+                auto leido = terminal.getline;
+                import std.regex;
+                if (!leido.matchFirst (`^\s*$`).empty) {
+                    break;
+                } else
+                if (!leido.matchFirst (`^c\s*$`).empty) {
+                    this.modoAvance = ModoAvance.continuo;
+                    break;
+                } else
+                if (!leido.matchFirst (`^w\s*$`).empty) {
+                    moverMemoriaArriba;
+                } else 
+                if (!leido.matchFirst (`^s\s*$`).empty) {
+                    moverMemoriaAbajo;
+                }
             }
         }
     }
+    private uint filaInicialDeMemoria = 0;
     private enum ModoAvance {continuo, manual};
     private ModoAvance modoAvance = ModoAvance.manual;
+    private void moverMemoriaArriba () {
+    
+    }
+    private void moverMemoriaAbajo () {
+    
+    }
     /// Corta el mensaje para que quepa en una línea de la terminal
     private void cortarMensaje (ref string mensaje) {
         import std.algorithm : min;
@@ -122,7 +143,7 @@ class TUI {
             // El 1 es de marco de arriba.
             terminal.moveTo (ubicaciónDeMemoria [0] - 4, columna);
             terminal.color (Color.blue, Color.DEFAULT);
-            terminal.writef (`%03X `, i * bytesPorLinea);
+            terminal.writef (`%03X `, (i + filaInicialDeMemoria * bytesPorLinea));
             terminal.color (Color.DEFAULT, Color.DEFAULT);
             terminal.write ('│');
             terminal.moveTo (posDerechaMarco, columna);
@@ -134,7 +155,7 @@ class TUI {
         terminal.write ('└', '─'.repeat.take (bytesPorLinea * 3), '┘');
     }
     private void mostrarInstruccionesUsuario () {
-        escribirEn (líneaSalidaMensajesUsuario, `Presione n para avanzar un paso, c para continuar hasta el final.`);
+        escribirEn (líneaSalidaMensajesUsuario, `Presione enter para avanzar un paso, c y enter para continuar hasta el final.`);
     }
 
     private auto espacioParaBytes () {
