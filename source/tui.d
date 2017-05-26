@@ -1,12 +1,14 @@
-enum ubicaciónTítulo            = 0;
+enum ubicaciónTítulo             = 0;
 // Ubicación de margen superior izquierdo de la tabla de memoria.
 // Debe haber espacio a la izquierda y arriba para el marco y direcciones de memoria.
-enum ubicaciónDeMemoria         = [5,1]; 
-enum cantidadLineasMemoria      = 16;
-enum líneaSalidaMensajesUsuario = ubicaciónDeMemoria [1] + cantidadLineasMemoria + 2;
+enum ubicaciónDeMemoria          = [5,1]; 
+enum cantidadLineasMemoria       = 16;
+// Las instrucciones usan dos líneas.
+enum líneaSalidaMensajesUsuario1 = ubicaciónDeMemoria [1] + cantidadLineasMemoria + 2;
+enum líneaSalidaMensajesUsuario2 = líneaSalidaMensajesUsuario1 + 1;
 // Línea inicial para los mensajes de cada núcleo.
 // Se deja un espacio en blanco antes.
-enum líneaSalidaNúcleos          = líneaSalidaMensajesUsuario + 2; 
+enum líneaSalidaNúcleos          = líneaSalidaMensajesUsuario2 + 2; 
 // Una para el mensaje de número de núcleo, otra para la instrucción ejecutada.
 enum lineasSalidaPorNúcleo       = 3;
 // Para los writes normales de la terminal.
@@ -30,16 +32,18 @@ class TUI {
             escribirEn (líneaSalidaNúcleos + (lineasSalidaPorNúcleo * numNúcleo), "Núcleo #", numNúcleo, ':');
             terminal.color (Color.DEFAULT, Color.DEFAULT);
         }
-        finEscritura;
+        this.finEscritura;
     }
     void finEscritura () {
         terminal.moveTo (0, líneaSalidaEstándar);
         terminal.flush;
     }
+    import memorias : memoriaPrincipalEnBytes;
     /// Actualiza los datos dentro del marco de la memoria.
     void actualizarMemoriaMostrada () {
-        import memorias : memoriaPrincipalEnBytes;
-        auto porMostrar = memoriaPrincipalEnBytes; // Lo convierte a slice
+        auto memoria = memoriaPrincipalEnBytes;
+        assert (byteFinalMostrado < memoria.length);
+        auto porMostrar = memoria [byteInicialMostrado..$]; // Lo convierte a slice
         bool quedaEspacio = true;
         foreach (i; 0..cantidadLineasMemoria) {
             auto posInicialX = ubicaciónDeMemoria [0] + 1 /* Marco izquierdo */;
@@ -86,15 +90,64 @@ class TUI {
     auto esperarUsuario () {
         if (this.modoAvance == ModoAvance.manual) {
             actualizarMemoriaMostrada;
-            auto leido = terminal.getline;
-            import std.regex;
-            if (!leido.matchFirst (`^c\s*$`).empty) {
-                this.modoAvance = ModoAvance.continuo;
+            while (true) {
+                auto leido = terminal.getline;
+                bool seEscribió (char letra) {
+                    import std.regex;
+                    return !leido.matchFirst (`^` ~ letra ~ `\s*$`).empty;
+                }
+                if (seEscribió ('n')) {
+                    // Solo avanza de instrucción.
+                    break;
+                } else
+                if (seEscribió ('c')) {
+                    // Cambia el modo y continúa.
+                    this.modoAvance = ModoAvance.continuo;
+                    break;
+                } else
+                if (seEscribió ('w')) {
+                    // Muestra posiciones anteriores de memoria.
+                    this.moverMemoriaArriba;
+                } else 
+                if (seEscribió ('s')) {
+                    // Muestra posiciones más grandes de memoria.
+                    this.moverMemoriaAbajo;
+                }
+                // Se limpia para que no se acumulen letras.
+                this.finEscritura;
             }
+            this.finEscritura;
         }
     }
+    /// Número de fila que se presenta de la memoria en la pantalla.
+    /// El byte correspondiente depende del ancho de la terminal.
+    private uint filaInicialDeMemoria = 0;
     private enum ModoAvance {continuo, manual};
     private ModoAvance modoAvance = ModoAvance.manual;
+    private uint byteInicialMostrado () {
+        return filaInicialDeMemoria * bytesPorLinea;
+    }
+    private uint byteFinalMostrado () {
+        return byteInicialMostrado + (cantidadLineasMemoria * bytesPorLinea);
+    }
+    private void moverMemoriaArriba () {
+        if (this.filaInicialDeMemoria > 0) {
+            // No se puede subir.
+            this.filaInicialDeMemoria --;
+            ponerMarcoMemoria;
+            actualizarMemoriaMostrada;
+        }
+    }
+    private void moverMemoriaAbajo () {
+        this.filaInicialDeMemoria ++;
+        if (byteFinalMostrado >= memoriaPrincipalEnBytes.length) {
+            // No cabe para mostrarlo. No se baja.
+            this.filaInicialDeMemoria --;
+            return;
+        }
+        ponerMarcoMemoria;
+        actualizarMemoriaMostrada;
+    }
     /// Corta el mensaje para que quepa en una línea de la terminal
     private void cortarMensaje (ref string mensaje) {
         import std.algorithm : min;
@@ -102,13 +155,13 @@ class TUI {
     }
     /// Retorna una hilera de n espacios.
     private string espacios (ulong cantidad) {
-        import std.range : repeat, take, array;
-        return ' '.repeat.take (cantidad).array;
+        import std.range : repeat, array;
+        return ' '.repeat(cantidad).array;
     }
     private void ponerMarcoMemoria () {
-        assert (ubicaciónDeMemoria [0] < terminal.width
+        assert (ubicaciónDeMemoria [0] + 1  < terminal.width
         /**/, `Insuficiente espacio horizontal para imprimir`);
-        assert (ubicaciónDeMemoria [1] < terminal.height
+        assert (ubicaciónDeMemoria [1] + 1 < terminal.height
         /**/, `Insuficiente espacio horizontal para imprimir`);
         import std.range : repeat, take;
         terminal.moveTo (ubicaciónDeMemoria [0], ubicaciónDeMemoria [1]);
@@ -122,7 +175,7 @@ class TUI {
             // El 1 es de marco de arriba.
             terminal.moveTo (ubicaciónDeMemoria [0] - 4, columna);
             terminal.color (Color.blue, Color.DEFAULT);
-            terminal.writef (`%03X `, i * bytesPorLinea);
+            terminal.writef (`%03X `, ((i + this.filaInicialDeMemoria) * bytesPorLinea));
             terminal.color (Color.DEFAULT, Color.DEFAULT);
             terminal.write ('│');
             terminal.moveTo (posDerechaMarco, columna);
@@ -134,7 +187,8 @@ class TUI {
         terminal.write ('└', '─'.repeat.take (bytesPorLinea * 3), '┘');
     }
     private void mostrarInstruccionesUsuario () {
-        escribirEn (líneaSalidaMensajesUsuario, `Presione n para avanzar un paso, c para continuar hasta el final.`);
+        escribirEn (líneaSalidaMensajesUsuario1, `Los comandos funcionan presionando letras y enter/retorno.`);
+        escribirEn (líneaSalidaMensajesUsuario2, `'n' avanza un paso, 'c' continúa hasta el final, 'w' y 's' se mueven en la memoria.`);
     }
 
     private auto espacioParaBytes () {
@@ -148,5 +202,3 @@ class TUI {
     }
     private Terminal terminal;
 }
-
-

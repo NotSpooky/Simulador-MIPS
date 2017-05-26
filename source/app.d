@@ -1,5 +1,6 @@
-import std.concurrency : spawn, thisTid;
+import std.concurrency : spawn, thisTid, OwnerTerminated;
 import tui : TUI;
+import std.stdio : writeln;
 
 private __gshared TUI interfazDeUsuario = null;
 void main (string [] args)
@@ -15,8 +16,14 @@ void main (string [] args)
     auto tidNúcleo = spawn (&iniciarEjecución
     /**/ , bloqueInicioInstrucciones * palabrasPorBloque, últimoNumNúcleo ++);
     interfazDeUsuario.actualizarMemoriaMostrada;
-    // Se le envían los núcleos al reloj para que los sincronice.
-    reloj.iniciar([HiloDeNúcleoConIdentificador(tidNúcleo, 0)], interfazDeUsuario);
+    import arsd.terminal : UserInterruptionException;
+    try {
+        // Se le envían los núcleos al reloj para que los sincronice.
+        reloj.iniciar([HiloDeNúcleoConIdentificador(tidNúcleo, 0)], interfazDeUsuario);
+    } catch (UserInterruptionException e) {
+        // Solo se termina el programa, el usuario lo detuvo.
+        writeln (`Interrumpido por el usuario.`);
+    }
 }
 
 /// Comienza a ejecutar en un nuevo núcleo con el contador en contadorPrograma.
@@ -25,9 +32,10 @@ void iniciarEjecución (uint contadorPrograma, uint numNúcleo) {
         import nucleo;
         Núcleo núcleo = new Núcleo (contadorPrograma, numNúcleo);
         núcleo.ejecutar (interfazDeUsuario);
+    } catch (OwnerTerminated) {
+        writeln (`Terminando hilo `, numNúcleo, `, hilo principal terminó.`);
     } catch (Throwable e) {
-        import std.stdio : writeln;
-        writeln (`Exception: `, e.msg);
+        writeln (`Excepción: `, e.msg);
         import core.stdc.stdlib : exit;
         exit (1);
     }
