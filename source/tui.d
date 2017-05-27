@@ -29,7 +29,10 @@ enum líneaSalidaEstándar        = líneaSalidaNúcleos
 // https://github.com/adamdruppe/arsd
 import arsd.terminal; 
 class TUI {
+    import core.thread : Mutex;
+    static shared Mutex lock;
     this () {
+        lock = new shared Mutex ();
         terminal = Terminal (ConsoleOutputType.linear);
         terminal.setTitle ("Simulador de MIPS");
         terminal.clear;
@@ -104,7 +107,9 @@ class TUI {
 
     /// Coloca un mensaje en la posición correspondiente al núcleo numNúcleo.
     void mostrar (T...)(uint numNúcleo, T mensaje) {
-        /+escribirEn (líneaSalidaNúcleos + (numNúcleo * lineasSalidaPorNúcleo) + 1, mensaje); +/
+        lock.lock ();
+        escribirEn (líneaSalidaNúcleos + (numNúcleo * lineasSalidaPorNúcleo) + 1, mensaje);
+        lock.unlock ();
     }
 
     /// Recibe un carácter del usuario y lo retorna.
