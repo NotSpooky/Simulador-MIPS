@@ -18,8 +18,10 @@ static void rellenarMemoria (palabra [] valoresRaw) {
     assert (maxPos <= bloqueFinInstrucciones
     /**/ , `Instrucciones fuera de límite: ` ~ maxPos.to!string);
     foreach (uint offsetDeBloque, valorRaw; valoresRaw) {
-        auto numBloque = bloqueInicioInstrucciones + (offsetDeBloque / palabrasPorBloque);
-        memoriaPrincipal [numBloque].palabras [offsetDeBloque % palabrasPorBloque] = valorRaw;
+        auto numBloque = bloqueInicioInstrucciones 
+        /**/ + (offsetDeBloque / palabrasPorBloque);
+        memoriaPrincipal [numBloque].palabras [offsetDeBloque % palabrasPorBloque]
+        /**/ = valorRaw;
     }
 }
 alias CachéL1 = Caché!1;

@@ -80,9 +80,9 @@ class TUI {
     }
     import nucleo : Registros;
     /// Los 32 registros normales, el RL y el PC.
-    void actualizarRegistros (uint numNúcleo, Registros registros) {
+    void actualizarRegistros (uint numNúcleo, Registros registrosRec) {
         import std.conv : to;
-        this.registros [numNúcleo] = registros.to!string;
+        this.registros [numNúcleo] = registrosRec.to!string;
     }
     /// Limpia la línea número numLínea y le escribe el mensaje.
     void escribirEn (T ...)(uint númeroDeLínea, T mensajes) {

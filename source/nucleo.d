@@ -43,7 +43,7 @@ final class Núcleo {
                 interpretar (this, instrucción, salida);
                 contadorDePrograma ++;
                 // Envía mensaje informando que finalizó (un tock).
-                Respuesta (Respuesta.Tipo.tock, this.númeroNúcleo).enviar;
+                Respuesta (Respuesta.Tipo.tock, this.númeroNúcleo, this.registros).enviar;
             } 
         } catch (ExcepciónDeFinDePrograma) {
             import reloj : Respuesta;
