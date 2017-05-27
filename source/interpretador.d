@@ -6,7 +6,7 @@ struct Instrucción {
     Código código;
     byte rf1;
     byte rf2;
-    byte inm;
+    short inm;
     @disable this ();
     import memorias : Bloque, Tipo, palabra, toBytes;
     @safe this (palabra palabraInstrucción) {
@@ -46,6 +46,10 @@ static void interpretar (Núcleo núcleo, Instrucción instrucción, TUI salida)
             auto Ry = núcleo.registros [rf1];
             auto n  = instrucción.inm;
             núcleo.registros [rf2] = Ry + n;
+            debug {
+                import std.stdio;
+                writeln (núcleo.registros [rf2]);
+            }
             break;
         case Código.DADD:
             // Rx <-- (Ry) + (Rz)

@@ -17,13 +17,9 @@ static void rellenarMemoria (palabra [] valoresRaw) {
     auto maxPos = valoresRaw.length + bloqueInicioInstrucciones;
     assert (maxPos <= bloqueFinInstrucciones
     /**/ , `Instrucciones fuera de límite: ` ~ maxPos.to!string);
-    import std.range : chunks;
-    uint offsetDeBloque = 0;
-    foreach (valorRaw; valoresRaw.chunks (palabrasPorBloque)) {
-        auto numBloque = bloqueInicioInstrucciones + offsetDeBloque;
-        memoriaPrincipal [numBloque].palabras 
-        /**/ = valorRaw.to!(palabra [palabrasPorBloque]);
-        offsetDeBloque ++;
+    foreach (uint offsetDeBloque, valorRaw; valoresRaw) {
+        auto numBloque = bloqueInicioInstrucciones + (offsetDeBloque / palabrasPorBloque);
+        memoriaPrincipal [numBloque].palabras [offsetDeBloque % palabrasPorBloque] = valorRaw;
     }
 }
 alias CachéL1 = Caché!1;

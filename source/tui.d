@@ -115,6 +115,7 @@ class TUI {
 
     /// Recibe un carácter del usuario y lo retorna.
     auto esperarUsuario (bool terminóEjecución = false) {
+        lock.lock ();
         if (terminóEjecución) {
             escribirEn (líneaInstruccionesUsuario1
             /**/, `Terminó ejecución`);
@@ -158,6 +159,7 @@ class TUI {
                 this.finEscritura;
             }
         }
+        lock.unlock ();
     }
     /// Número de fila que se presenta de la memoria en la pantalla.
     /// El byte correspondiente depende del ancho de la terminal.
