@@ -42,6 +42,7 @@ class TUI {
         mostrarInstruccionesUsuario;
         foreach (numNúcleo; 0..cantidadNúcleos) {
             terminal.color (Color.red, Color.DEFAULT);
+            escribirEn (líneaRegistros + ((tamañoMarco + 1) * numNúcleo), "Núcleo #", numNúcleo, ':');
             escribirEn (líneaSalidaNúcleos + (lineasSalidaPorNúcleo * numNúcleo), "Núcleo #", numNúcleo, ':');
             terminal.color (Color.DEFAULT, Color.DEFAULT);
         }
