@@ -1,4 +1,4 @@
-enum ubicaciónTítulo             = 0;
+enum ubicaciónTitulo             = 0;
 // Ubicación de margen superior izquierdo de la tabla de memoria.
 // Debe haber espacio a la izquierda y arriba para el marco y direcciones de memoria.
 enum ubicaciónDeMemoria          = [5,1]; 
