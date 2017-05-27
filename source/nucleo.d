@@ -56,10 +56,19 @@ final class Núcleo {
 struct Registros {
     palabra [32] registros = 0;
     palabra      rl;
+    /// Escribir a la posición 0 no es válido.
     void opIndexAssign (palabra nuevoVal, uint posición) {
         assert (posición >= 1 && posición < 32, `Registro fuera de rango: `
         /**/ ~ posición.to!string ~ ` con valor: ` ~ nuevoVal.to!string);
         registros [posición] = nuevoVal;
+    }
+    /// Para imprimirlo en pantalla"
+    void toString (scope void delegate (const (char) []) sacar) const {
+        import std.format;
+        foreach (i, registro; registros) {
+            sacar (format (`R%02d: %08X `, i, registro));
+        }
+        sacar (format (`RL: %08X`, this.rl));
     }
     alias registros this;
 }

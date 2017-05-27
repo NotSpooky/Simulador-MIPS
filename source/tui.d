@@ -74,13 +74,11 @@ class TUI {
         }
         finEscritura;
     }
+    import nucleo : Registros;
     /// Los 32 registros normales, el RL y el PC.
-    void actualizarRegistrosMostrados (T)(uint numNúcleo, T registros) {
-        auto líneaPorUsar = líneaRegistros 
-            // Cada núcleo ocupa 3 filas
-            + (numNúcleo * (tamañoMarco + 1))
-            + 1; // Siguiente, la primera es parte del marco.
-        escribirEn (líneaPorUsar, registros);
+    void actualizarRegistros (uint numNúcleo, Registros registros) {
+        import std.conv : to;
+        this.registros [numNúcleo] = registros.to!string;
     }
     /// Limpia la línea número numLínea y le escribe el mensaje.
     void escribirEn (T ...)(uint númeroDeLínea, T mensajes) {
@@ -106,7 +104,7 @@ class TUI {
 
     /// Coloca un mensaje en la posición correspondiente al núcleo numNúcleo.
     void mostrar (T...)(uint numNúcleo, T mensaje) {
-        escribirEn (líneaSalidaNúcleos + (numNúcleo * lineasSalidaPorNúcleo) + 1, mensaje);
+        /+escribirEn (líneaSalidaNúcleos + (numNúcleo * lineasSalidaPorNúcleo) + 1, mensaje); +/
     }
 
     /// Recibe un carácter del usuario y lo retorna.
@@ -117,6 +115,7 @@ class TUI {
             escribirEn (líneaInstruccionesUsuario2, ""); // Lo limpia.
         }
         this.actualizarMemoriaMostrada;
+        this.actualizarRegistrosMostrados;
         if (terminóEjecución || this.modoAvance == ModoAvance.manual) {
             while (true) {
                 auto leido = terminal.getline;
@@ -140,6 +139,14 @@ class TUI {
                 if (seEscribió ('s')) {
                     // Muestra posiciones más grandes de memoria.
                     this.moverMemoriaAbajo;
+                } else
+                if (seEscribió ('z') && this.posInicialRegistros > 13) {
+                    this.posInicialRegistros -= 14;
+                    this.actualizarRegistrosMostrados;
+                } else 
+                if (seEscribió ('x')) {
+                    this.posInicialRegistros += 14;
+                    this.actualizarRegistrosMostrados;
                 }
                 // Se limpia para que no se acumulen letras.
                 this.finEscritura;
@@ -148,7 +155,11 @@ class TUI {
     }
     /// Número de fila que se presenta de la memoria en la pantalla.
     /// El byte correspondiente depende del ancho de la terminal.
-    private uint filaInicialDeMemoria = 0;
+    private uint filaInicialDeMemoria          = 0;
+    /// Primer posición de la hilera de registros por mostrar.
+    private uint posInicialRegistros           = 0;
+    /// Mensaje por mostrar en los registros de cada núcleo.
+    private string [cantidadNúcleos] registros = [``,``];
     private enum ModoAvance {continuo, manual};
     private ModoAvance modoAvance = ModoAvance.manual;
     private uint byteInicialMostrado () {
@@ -158,12 +169,30 @@ class TUI {
         return byteInicialMostrado + (cantidadLineasMemoria * bytesPorLinea);
     }
     private void moverMemoriaArriba () {
+        // Solo se sube si no se llega a 0.
         if (this.filaInicialDeMemoria > 0) {
-            // No se puede subir.
             this.filaInicialDeMemoria --;
             ponerMarcoMemoria;
             actualizarMemoriaMostrada;
         }
+    }
+    /// Actualiza en la pantalla los registros a partir de la posición
+    /// de posInicialRegistros.
+    private void actualizarRegistrosMostrados () {
+        foreach (uint numNúcleo, registro; this.registros) {
+            auto líneaPorUsar = líneaRegistros 
+                // Cada núcleo ocupa 3 filas
+                + (numNúcleo * (tamañoMarco + 1))
+                + 1; // Siguiente, la primera es parte del marco.
+            auto porMostrar = 
+                this.registros 
+                [numNúcleo];
+            if (this.posInicialRegistros >= porMostrar.length) {
+                this.posInicialRegistros = 0;
+            }
+            escribirEn (líneaPorUsar, porMostrar [this.posInicialRegistros .. $]);
+        }
+        this.finEscritura;
     }
     private void moverMemoriaAbajo () {
         this.filaInicialDeMemoria ++;
@@ -186,9 +215,9 @@ class TUI {
         return repeat (' ', cantidad).array;
     }
     private void ponerMarcoMemoria () {
-        assert (ubicaciónDeMemoria [0] + 1  < terminal.width
+        assert (ubicaciónDeMemoria [0] + 4  < terminal.width
         /**/, `Insuficiente espacio vertical para imprimir`);
-        assert (ubicaciónDeMemoria [1] + 1 < terminal.height
+        assert (ubicaciónDeMemoria [1] + 4 < terminal.height
         /**/, `Insuficiente espacio horizontal para imprimir`);
         import std.range : repeat;
         terminal.moveTo (ubicaciónDeMemoria [0], ubicaciónDeMemoria [1]);

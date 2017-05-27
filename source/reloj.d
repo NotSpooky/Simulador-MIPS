@@ -54,7 +54,7 @@ final class Reloj {
                             // Si uno terminó la ejecución se agrega al arreglo.
                             terminaronEjecución ~= respuesta.númeroNúcleo;
                         }
-                        interfaz.actualizarRegistrosMostrados (
+                        interfaz.actualizarRegistros (
                         /**/ respuesta.númeroNúcleo,
                         /**/ respuesta.registros
                         );
