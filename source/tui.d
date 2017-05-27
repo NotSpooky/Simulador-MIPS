@@ -1,19 +1,29 @@
-enum ubicaciónTitulo             = 0;
-// Ubicación de margen superior izquierdo de la tabla de memoria.
+enum líneaTítulo                = 0;
+// Cuántos espacios necesita el marco de memoria y registros a cada lado.
+enum tamañoMarco                =  2;
+// Ubicación del margen superior izquierdo de la tabla de memoria.
 // Debe haber espacio a la izquierda y arriba para el marco y direcciones de memoria.
-enum ubicaciónDeMemoria          = [5,1]; 
-enum cantidadLineasMemoria       = 16;
+enum ubicaciónDeMemoria         = [5,1]; 
+enum cantidadLineasMemoria      = 16;
+import nucleo : cantidadNúcleos;
+// Ubicación del margen superior izquierdo de la primer tabla de registros.
+enum líneaRegistros             = ubicaciónDeMemoria [1] + cantidadLineasMemoria 
+                                 + tamañoMarco
+                                 + 1; // Siguiente.
 // Las instrucciones usan dos líneas.
-enum líneaSalidaMensajesUsuario1 = ubicaciónDeMemoria [1] + cantidadLineasMemoria + 2;
-enum líneaSalidaMensajesUsuario2 = líneaSalidaMensajesUsuario1 + 1;
+enum líneaInstruccionesUsuario1 = líneaRegistros 
+                                 + (cantidadNúcleos * (tamañoMarco + 1)) 
+                                 + 1; // Siguiente.
+enum líneaInstruccionesUsuario2 = líneaInstruccionesUsuario1 + 1;
 // Línea inicial para los mensajes de cada núcleo.
 // Se deja un espacio en blanco antes.
-enum líneaSalidaNúcleos          = líneaSalidaMensajesUsuario2 + 2; 
+enum líneaSalidaNúcleos         = líneaInstruccionesUsuario2 + 2; 
 // Una para el mensaje de número de núcleo, otra para la instrucción ejecutada.
-enum lineasSalidaPorNúcleo       = 3;
+enum lineasSalidaPorNúcleo      = 3;
 // Para los writes normales de la terminal.
-import nucleo : cantidadNúcleos;
-enum líneaSalidaEstándar         = líneaSalidaNúcleos + (lineasSalidaPorNúcleo * cantidadNúcleos) + 1;
+enum líneaSalidaEstándar        = líneaSalidaNúcleos 
+                                 + (lineasSalidaPorNúcleo * cantidadNúcleos) 
+                                 + 1; //Siguiente.
 
 // arsd es un repositorio de Adam D. Ruppe.
 // https://github.com/adamdruppe/arsd
@@ -24,7 +34,7 @@ class TUI {
         terminal.setTitle ("Simulador de MIPS");
         terminal.clear;
         // UFCS
-        escribirCentradoEn (ubicaciónTítulo, "Simulador de MIPS");
+        escribirCentradoEn (líneaTítulo, "Simulador de MIPS");
         ponerMarcoMemoria;
         mostrarInstruccionesUsuario;
         foreach (numNúcleo; 0..cantidadNúcleos) {
@@ -34,6 +44,7 @@ class TUI {
         }
         this.finEscritura;
     }
+    /// Se debe llamar al final de realizar writes o moveTo en la terminal.
     void finEscritura () {
         terminal.moveTo (0, líneaSalidaEstándar);
         terminal.flush;
@@ -42,7 +53,7 @@ class TUI {
     /// Actualiza los datos dentro del marco de la memoria.
     void actualizarMemoriaMostrada () {
         auto memoria = memoriaPrincipalEnBytes;
-        assert (byteFinalMostrado < memoria.length);
+        assert (byteInicialMostrado < memoria.length);
         auto porMostrar = memoria [byteInicialMostrado..$]; // Lo convierte a slice
         bool quedaEspacio = true;
         foreach (i; 0..cantidadLineasMemoria) {
@@ -52,12 +63,24 @@ class TUI {
             foreach (j; 0..bytesPorLinea) {
                 import std.range;
                 import std.conv : to;
-                if (porMostrar.empty) break; // No mostrar más abajo.
-                terminal.writef (`%02X `, porMostrar.front);
-                porMostrar.popFront;
+                if (porMostrar.empty) {
+                    // No hay más que mostrar.
+                    terminal.write (`-- `);
+                } else {
+                    terminal.writef (`%02X `, porMostrar.front);
+                    porMostrar.popFront;
+                }
             }
         }
         finEscritura;
+    }
+    /// Los 32 registros normales, el RL y el PC.
+    void actualizarRegistrosMostrados (T)(uint numNúcleo, T registros) {
+        auto líneaPorUsar = líneaRegistros 
+            // Cada núcleo ocupa 3 filas
+            + (numNúcleo * (tamañoMarco + 1))
+            + 1; // Siguiente, la primera es parte del marco.
+        escribirEn (líneaPorUsar, registros);
     }
     /// Limpia la línea número numLínea y le escribe el mensaje.
     void escribirEn (T ...)(uint númeroDeLínea, T mensajes) {
@@ -87,9 +110,13 @@ class TUI {
     }
 
     /// Recibe un carácter del usuario y lo retorna.
-    auto esperarUsuario () {
+    auto esperarUsuario (string mensaje = null) {
+        if (mensaje) {
+            escribirEn (líneaInstruccionesUsuario1, mensaje);
+            escribirEn (líneaInstruccionesUsuario2, ""); // Lo limpia.
+        }
+        this.actualizarMemoriaMostrada;
         if (this.modoAvance == ModoAvance.manual) {
-            actualizarMemoriaMostrada;
             while (true) {
                 auto leido = terminal.getline;
                 bool seEscribió (char letra) {
@@ -116,7 +143,6 @@ class TUI {
                 // Se limpia para que no se acumulen letras.
                 this.finEscritura;
             }
-            this.finEscritura;
         }
     }
     /// Número de fila que se presenta de la memoria en la pantalla.
@@ -156,17 +182,17 @@ class TUI {
     /// Retorna una hilera de n espacios.
     private string espacios (ulong cantidad) {
         import std.range : repeat, array;
-        return ' '.repeat(cantidad).array;
+        return repeat (' ', cantidad).array;
     }
     private void ponerMarcoMemoria () {
         assert (ubicaciónDeMemoria [0] + 1  < terminal.width
-        /**/, `Insuficiente espacio horizontal para imprimir`);
+        /**/, `Insuficiente espacio vertical para imprimir`);
         assert (ubicaciónDeMemoria [1] + 1 < terminal.height
         /**/, `Insuficiente espacio horizontal para imprimir`);
-        import std.range : repeat, take;
+        import std.range : repeat;
         terminal.moveTo (ubicaciónDeMemoria [0], ubicaciónDeMemoria [1]);
         // Marco de arriba.
-        terminal.write ('┌', '─'.repeat.take (bytesPorLinea * 3), '┐');
+        terminal.write ('┌', repeat ('─', bytesPorLinea * 3), '┐');
         uint posDerechaMarco = ubicaciónDeMemoria [0] + bytesPorLinea * 3 + 1 /*Marco iz*/;
         foreach (i; 0 .. cantidadLineasMemoria) {
             // Marcos de la izquierda y derecha.
@@ -184,11 +210,11 @@ class TUI {
         // Marco de abajo.
         terminal.moveTo (ubicaciónDeMemoria [0]
         /**/ , ubicaciónDeMemoria [1] + cantidadLineasMemoria + 1);
-        terminal.write ('└', '─'.repeat.take (bytesPorLinea * 3), '┘');
+        terminal.write ('└', repeat ('─', bytesPorLinea * 3), '┘');
     }
     private void mostrarInstruccionesUsuario () {
-        escribirEn (líneaSalidaMensajesUsuario1, `Los comandos funcionan presionando letras y enter/retorno.`);
-        escribirEn (líneaSalidaMensajesUsuario2, `'n' avanza un paso, 'c' continúa hasta el final, 'w' y 's' se mueven en la memoria.`);
+        escribirEn (líneaInstruccionesUsuario1, `Los comandos funcionan presionando letras y enter/retorno.`);
+        escribirEn (líneaInstruccionesUsuario2, `'n' avanza un paso, 'c' continúa hasta el final, 'w' y 's' se mueven en la memoria.`);
     }
 
     private auto espacioParaBytes () {

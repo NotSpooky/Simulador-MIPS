@@ -11,6 +11,8 @@ struct Respuesta {
 
     Tipo tipo;
     uint númeroNúcleo;
+    import nucleo : Registros;
+    Registros registros;
     /// Envía este mensaje al reloj.
     void enviar () {
         tidReloj.send (this); 
@@ -52,6 +54,10 @@ final class Reloj {
                             // Si uno terminó la ejecución se agrega al arreglo.
                             terminaronEjecución ~= respuesta.númeroNúcleo;
                         }
+                        interfaz.actualizarRegistrosMostrados (
+                        /**/ respuesta.númeroNúcleo,
+                        /**/ respuesta.registros
+                        );
                     }
                 );
             }
@@ -68,6 +74,9 @@ final class Reloj {
                 tidNúcleos = tidNúcleos.remove (índicePorEliminar);
             }
         }
+        // Útil para explorar luego de que termine ejecución.
+        // Especialmente en modo continuo.
+        interfaz.esperarUsuario ("Terminó ejecución");
     }
 }
 

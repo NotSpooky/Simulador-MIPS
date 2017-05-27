@@ -47,7 +47,7 @@ final class Núcleo {
             } 
         } catch (ExcepciónDeFinDePrograma) {
             import reloj : Respuesta;
-            Respuesta (Respuesta.Tipo.terminóEjecución, this.númeroNúcleo).enviar;
+            Respuesta (Respuesta.Tipo.terminóEjecución, this.númeroNúcleo, this.registros).enviar;
             return;
         }
     }
