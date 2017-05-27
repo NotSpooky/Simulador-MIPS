@@ -76,7 +76,7 @@ final class Reloj {
         }
         // Útil para explorar luego de que termine ejecución.
         // Especialmente en modo continuo.
-        interfaz.esperarUsuario ("Terminó ejecución");
+        interfaz.esperarUsuario (true);
     }
 }
 

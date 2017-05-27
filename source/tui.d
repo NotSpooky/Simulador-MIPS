@@ -110,13 +110,14 @@ class TUI {
     }
 
     /// Recibe un carácter del usuario y lo retorna.
-    auto esperarUsuario (string mensaje = null) {
-        if (mensaje) {
-            escribirEn (líneaInstruccionesUsuario1, mensaje);
+    auto esperarUsuario (bool terminóEjecución = false) {
+        if (terminóEjecución) {
+            escribirEn (líneaInstruccionesUsuario1
+            /**/, `Terminó ejecución`);
             escribirEn (líneaInstruccionesUsuario2, ""); // Lo limpia.
         }
         this.actualizarMemoriaMostrada;
-        if (this.modoAvance == ModoAvance.manual) {
+        if (terminóEjecución || this.modoAvance == ModoAvance.manual) {
             while (true) {
                 auto leido = terminal.getline;
                 bool seEscribió (char letra) {
