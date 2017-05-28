@@ -10,14 +10,13 @@ import nucleo : cantidadNúcleos;
 enum líneaRegistros             = ubicaciónDeMemoria [1] + cantidadLineasMemoria 
                                  + tamañoMarco
                                  + 1; // Siguiente.
-// Las instrucciones usan dos líneas.
-enum líneaInstruccionesUsuario1 = líneaRegistros 
+enum líneaInstruccionesUsuario  = líneaRegistros 
                                  + (cantidadNúcleos * (tamañoMarco + 1)) 
                                  + 1; // Siguiente.
-enum líneaInstruccionesUsuario2 = líneaInstruccionesUsuario1 + 1;
+enum cantidadFilasInstrucciones = 3;
 // Línea inicial para los mensajes de cada núcleo.
 // Se deja un espacio en blanco antes.
-enum líneaSalidaNúcleos         = líneaInstruccionesUsuario2 + 2; 
+enum líneaSalidaNúcleos         = líneaInstruccionesUsuario + cantidadFilasInstrucciones + 1; 
 // Una para el mensaje de número de núcleo, otra para la instrucción ejecutada.
 enum lineasSalidaPorNúcleo      = 3;
 // Para los writes normales de la terminal.
@@ -117,9 +116,11 @@ class TUI {
     auto esperarUsuario (bool terminóEjecución = false) {
         lock.lock ();
         if (terminóEjecución) {
-            escribirEn (líneaInstruccionesUsuario1
+            static assert (cantidadFilasInstrucciones == 3, `Acá se supone que hay 3 filas.`);
+            escribirEn (líneaInstruccionesUsuario
             /**/, `Terminó ejecución`);
-            escribirEn (líneaInstruccionesUsuario2, ""); // Lo limpia.
+            escribirEn (líneaInstruccionesUsuario + 1, ""); // Lo limpia.
+            escribirEn (líneaInstruccionesUsuario + 2, "");
         }
         this.actualizarMemoriaMostrada;
         this.actualizarRegistrosMostrados;
@@ -251,8 +252,10 @@ class TUI {
         terminal.write ('└', repeat ('─', bytesPorLinea * 3), '┘');
     }
     private void mostrarInstruccionesUsuario () {
-        escribirEn (líneaInstruccionesUsuario1, `Los comandos funcionan presionando letras y enter/retorno.`);
-        escribirEn (líneaInstruccionesUsuario2, `'n' avanza un paso, 'c' continúa hasta el final, 'w' y 's' se mueven en la memoria.`);
+        static assert (cantidadFilasInstrucciones == 3);
+        escribirEn (líneaInstruccionesUsuario, `Los comandos funcionan presionando letras y enter/retorno.`);
+        escribirEn (líneaInstruccionesUsuario + 1, `'n' avanza un paso, 'c' continúa hasta el final, 'w' y 's' se mueven en la memoria.`);
+        escribirEn (líneaInstruccionesUsuario + 2, `'z' mueve los registros hacia atrás, 'x' hacia delante.`);
     }
 
     private auto espacioParaBytes () {
