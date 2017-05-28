@@ -218,7 +218,7 @@ class TUI {
         mensaje = mensaje [0..min(mensaje.length, terminal.width)];
     }
     /// Retorna una hilera de n espacios.
-    private string espacios (ulong cantidad) {
+    private string espacios (size_t cantidad) {
         import std.range : repeat, array;
         return repeat (' ', cantidad).array;
     }

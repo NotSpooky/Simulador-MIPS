@@ -9,9 +9,14 @@ struct Respuesta {
     /// va a recibir más ticks.
     enum Tipo {tock, terminóEjecución};
 
+    import nucleo : Registros;
+    this (Tipo tipo, uint númeroNúcleo, Registros registros) {
+        this.tipo         = tipo;
+        this.númeroNúcleo = númeroNúcleo;
+        this.registros    = registros;
+    }
     Tipo tipo;
     uint númeroNúcleo;
-    import nucleo : Registros;
     Registros registros;
     /// Envía este mensaje al reloj.
     void enviar () {

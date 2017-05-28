@@ -62,7 +62,7 @@ struct Registros {
         /**/ ~ posición.to!string ~ ` con valor: ` ~ nuevoVal.to!string);
         registros [posición] = nuevoVal;
     }
-    /// Para imprimirlo en pantalla"
+    /// Para imprimirlo en pantalla.
     void toString (scope void delegate (const (char) []) sacar) const {
         import std.format;
         foreach (i, registro; registros) {
