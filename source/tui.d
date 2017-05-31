@@ -119,8 +119,8 @@ class TUI {
             static assert (cantidadFilasInstrucciones == 3, `Acá se supone que hay 3 filas.`);
             escribirEn (líneaInstruccionesUsuario
             /**/, `Terminó ejecución`);
-            escribirEn (líneaInstruccionesUsuario + 1, ""); // Lo limpia.
-            escribirEn (líneaInstruccionesUsuario + 2, "");
+            escribirEn (líneaInstruccionesUsuario + 1, `Presione n y enter para finalizar.`);
+            escribirEn (líneaInstruccionesUsuario + 2, ""); // Lo limpia.
         }
         this.actualizarMemoriaMostrada;
         this.actualizarRegistrosMostrados;

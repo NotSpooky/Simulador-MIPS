@@ -3,21 +3,19 @@ module reloj;
 struct Tick {} /// Mensaje enviado a los núcleos para que empiecen un ciclo.
 
 import std.concurrency;
+import nucleo : Núcleo;
 /// Mensaje enviado desde los núcleos al reloj.
 struct Respuesta {
     /// Los tocks son ciclos normales, el Tipo es terminóEjecución cuando ya no
     /// va a recibir más ticks.
     enum Tipo {tock, terminóEjecución};
 
-    import nucleo : Registros;
-    this (Tipo tipo, uint númeroNúcleo, Registros registros) {
+    this (Tipo tipo, uint númeroNúcleo) {
         this.tipo         = tipo;
         this.númeroNúcleo = númeroNúcleo;
-        this.registros    = registros;
     }
     Tipo tipo;
     uint númeroNúcleo;
-    Registros registros;
     /// Envía este mensaje al reloj.
     void enviar () {
         tidReloj.send (this); 
@@ -28,6 +26,18 @@ struct Respuesta {
 /// Reloj debe ser instanciado antes de ejecutar esta función.
 void esperarTick () {
     receiveOnly!Tick;
+}
+
+/// Se espera un ciclo más para intentar algo en el siguiente.
+void relojazo () {
+    esperarTick;
+    Respuesta (Respuesta.Tipo.tock, Núcleo.númeroNúcleo).enviar;
+}
+
+/// Le dice al reloj que ya terminó de inicializarse un núcleo y puede empezar a
+/// ejecutar. El reloj no empieza a mandar relojazos hasta que todos estén listos.
+void enviarMensajeDeInicio () {
+    tidReloj.send (Núcleo.númeroNúcleo);
 }
 
 final class Reloj {
@@ -45,6 +55,13 @@ final class Reloj {
     void iniciar (HiloDeNúcleoConIdentificador [] tidNúcleos, TUI interfaz) {
         import std.algorithm : countUntil, remove, map;
         uint cantidadTicks = 0; // "Relojazos"
+        // Se espera a que se inicialicen.
+        foreach (i; 0 .. tidNúcleos.length) {
+            receive ( 
+                (uint numNúcleo) {}, 
+                ()               {assert (0, `Mensaje no esperado.`);} 
+            );
+        }
         while (tidNúcleos.length) {
             cantidadTicks ++;
             // A cada núcleo se le envía un tick.
@@ -59,10 +76,6 @@ final class Reloj {
                             // Si uno terminó la ejecución se agrega al arreglo.
                             terminaronEjecución ~= respuesta.númeroNúcleo;
                         }
-                        interfaz.actualizarRegistros (
-                        /**/ respuesta.númeroNúcleo,
-                        /**/ respuesta.registros
-                        );
                     }
                 );
             }

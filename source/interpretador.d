@@ -110,11 +110,14 @@ static void interpretar (Núcleo núcleo, Instrucción instrucción, TUI salida)
             import memorias : memoriaPrincipal, bytesPorPalabra;
             assert ((posBase % bytesPorPalabra) == 0
             /**/ , `LW no alineado: ` ~ posBase.to!string);
+            /+
             uint posición = (posBase / bytesPorPalabra).to!int;
             assert (posición >= 0 && posición < 256);
             núcleo.registros [rf2]
             /**/ = núcleo.cachéDatos [posición];
             break;
+            +/
+            assert (0, `TO DO: LW`);
         case Código.SW:
             // Memoria (n + (Ry)) <-- Rx 
             int Rx = núcleo.registros [rf2];
@@ -124,9 +127,12 @@ static void interpretar (Núcleo núcleo, Instrucción instrucción, TUI salida)
             assert ((posBase % bytesPorPalabra) == 0
             /**/ , `SW no alineado: ` ~ posBase.to!string);
             uint posición = (posBase / bytesPorPalabra).to!int;
+            assert (0, `TO DO: SW`);
+            /+
             assert (posición >= 0 && posición < 256);
             núcleo.cachéDatos [posición] = Rx;
             break;
+            +/
         case Código.FIN:
             // Stop stop stop stop.
             throw new ExcepciónDeFinDePrograma ();
