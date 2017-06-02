@@ -59,18 +59,18 @@ class CachéL1 (TipoCaché tipoCaché) {
         conseguirCandados ([this.candado, candadoL2]);
         // Se obtuvo la L2.
     
-        if (bloques [numBloqueMem % bloques.length].modificado) {
-            // Es write back y está modificado => Hay que escribirlo a L2/mem.
-            foreach (i; 0..ciclosBloqueMemL2 + ciclosBloqueL2L1) {
-                relojazo;
-            }
-            //memoriaPrincipal [numBloqueMem] = 
-            assert (0, `TO DO: Escribir a memoria`);
-        }
-
-        // Se tiene el bloque libre para traerlo.
-        // Se intenta conseguir la otra L1 para ver si tiene el dato (snooping).
         static if (tipoCaché == TipoCaché.datos) {
+            if (bloques [numBloqueMem % bloques.length].modificado) {
+                // Es write back y está modificado => Hay que escribirlo a L2/mem.
+                foreach (i; 0..ciclosBloqueMemL2 + ciclosBloqueL2L1) {
+                    relojazo;
+                }
+                //memoriaPrincipal [numBloqueMem] = 
+                assert (0, `TO DO: Escribir a memoria`);
+            }
+
+            // Se tiene el bloque libre para traerlo.
+            // Se intenta conseguir la otra L1 para ver si tiene el dato (snooping).
             assert (candadoDeLaOtraL1, `candadoDeLaOtraL1 no inicializado`);
             conseguirCandados ([this.candado, candadoL2, candadoDeLaOtraL1]);
             debug {
