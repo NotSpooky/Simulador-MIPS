@@ -152,8 +152,10 @@ class CachéL2 {
                 relojazo;
             }
             this.bloques [posBloque] =
-            /**/ Bloque!(Tipo.caché)(memoriaPrincipal [númeroBloqueEnMemoria]);
+            /**/ Bloque!(Tipo.caché)(memoriaPrincipal [númeroBloqueEnMemoria], númeroBloqueEnMemoria);
         }
+        assert (this.bloques [posBloque].bloqueEnMemoria == númeroBloqueEnMemoria);
+        assert (this.bloques [posBloque].válido);
         return this.bloques [posBloque];
 
     }
@@ -186,22 +188,22 @@ private shared static this () {
 
 enum Tipo {memoria, caché};
 struct Bloque (Tipo tipo) {
-    uint bloqueEnMemoria                     = 0;
     static if (tipo == Tipo.memoria) {
         // Es memoria, se inicializa con 1s.
         palabra [palabrasPorBloque] palabras = 1;
         alias palabras this; // Permite usar el operador de índice.
     } else {
+        uint bloqueEnMemoria                 = 0;
         // Es caché, se inicializa con 0s.
         palabra [palabrasPorBloque] palabras = 0;
         bool válido                          = false;
         bool modificado                      = false;
         /// Constructor para convertir bloques de memoria a bloques de caché.
-        this (shared Bloque!(Tipo.memoria) bloquePorCopiar) {
+        this (shared Bloque!(Tipo.memoria) bloquePorCopiar, uint numBloqueMem) {
             this.palabras        = // Se le quita el shared.
             /**/ cast (palabra [palabrasPorBloque]) bloquePorCopiar.palabras;
             this.válido          = true;
-            this.bloqueEnMemoria = bloquePorCopiar.bloqueEnMemoria;
+            this.bloqueEnMemoria = numBloqueMem;
         }
         auto opIndex (uint numPalabra) {
             assert (numPalabra < palabras.length);
