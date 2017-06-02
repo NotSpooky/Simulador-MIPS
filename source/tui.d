@@ -129,7 +129,8 @@ class TUI {
         this.actualizarRegistrosMostrados;
         if (terminóEjecución || this.modoAvance == ModoAvance.manual) {
             while (true) {
-                auto leido = terminal.getline;
+                import std.stdio : readln;
+                auto leido = readln;
                 bool seEscribió (char letra) {
                     import std.regex;
                     return !leido.matchFirst (`^` ~ letra ~ `\s*$`).empty;
