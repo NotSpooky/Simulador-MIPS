@@ -76,12 +76,11 @@ final class Reloj {
             import std.variant;
                 receive (
                     (Respuesta respuesta) {
-                        import std.stdio;
                         if (respuesta.tipo == Respuesta.Tipo.terminóEjecución) {
                             // Si uno terminó la ejecución se agrega al arreglo.
                             terminaronEjecución ~= respuesta.númeroNúcleo;
-                            interfaz.actualizarRegistros (respuesta.númeroNúcleo, respuesta.registros);
                         }
+                        interfaz.actualizarRegistros (respuesta.númeroNúcleo, respuesta.registros);
                     }, 
                     (Variant parámetrosInesperados) {
                         import std.conv : text;
