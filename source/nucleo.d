@@ -16,7 +16,7 @@ final class Núcleo {
     }
     @disable this ();
     uint contadorDePrograma; /// Tiene el número de instrucción, no de bloque.
-    Registros registros;
+    static Registros registros;
     import memorias : CachéL1Instrucciones, CachéL1Datos, CachéL2;
     CachéL1Instrucciones   cachéInstrucciones = null;
     static uint númeroNúcleo = -1;
@@ -42,11 +42,11 @@ final class Núcleo {
                 interpretar (this, instrucción, salida);
                 contadorDePrograma ++;
                 // Envía mensaje informando que finalizó (un tock).
-                Respuesta (Respuesta.Tipo.tock, this.númeroNúcleo).enviar;
+                Respuesta (Respuesta.Tipo.tock).enviar;
             } 
         } catch (ExcepciónDeFinDePrograma) {
             import reloj : Respuesta;
-            Respuesta (Respuesta.Tipo.terminóEjecución, this.númeroNúcleo).enviar;
+            Respuesta (Respuesta.Tipo.terminóEjecución).enviar;
             return;
         }
     }

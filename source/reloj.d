@@ -3,19 +3,21 @@ module reloj;
 struct Tick {} /// Mensaje enviado a los núcleos para que empiecen un ciclo.
 
 import std.concurrency;
-import nucleo : Núcleo;
+import nucleo : Núcleo, Registros;
 /// Mensaje enviado desde los núcleos al reloj.
 struct Respuesta {
     /// Los tocks son ciclos normales, el Tipo es terminóEjecución cuando ya no
     /// va a recibir más ticks.
     enum Tipo {tock, terminóEjecución};
 
-    this (Tipo tipo, uint númeroNúcleo) {
+    this (Tipo tipo) {
         this.tipo         = tipo;
-        this.númeroNúcleo = númeroNúcleo;
+        this.númeroNúcleo = Núcleo.númeroNúcleo;
+        this.registros    = Núcleo.registros;
     }
     Tipo tipo;
     uint númeroNúcleo;
+    Registros registros;
     /// Envía este mensaje al reloj.
     void enviar () {
         tidReloj.send (this); 
@@ -31,7 +33,7 @@ void esperarTick () {
 /// Se espera un ciclo más para intentar algo en el siguiente.
 void relojazo () {
     esperarTick;
-    Respuesta (Respuesta.Tipo.tock, Núcleo.númeroNúcleo).enviar;
+    Respuesta (Respuesta.Tipo.tock).enviar;
 }
 
 /// Le dice al reloj que ya terminó de inicializarse un núcleo y puede empezar a
@@ -75,6 +77,7 @@ final class Reloj {
                         if (respuesta.tipo == Respuesta.Tipo.terminóEjecución) {
                             // Si uno terminó la ejecución se agrega al arreglo.
                             terminaronEjecución ~= respuesta.númeroNúcleo;
+                            interfaz.actualizarRegistros (respuesta.númeroNúcleo, respuesta.registros);
                         }
                     }
                 );

@@ -1,13 +1,19 @@
 module memorias;
 
-import std.conv : to;
+import std.conv        : to;
+import reloj           : relojazo;
+import nucleo          : cantidadNúcleos;
+import core.sync.mutex : Mutex;
 
-alias palabra = int;
+public alias palabra = int;
 enum bytesPorPalabra           = palabra.sizeof;
 enum bloqueInicioInstrucciones = 24;
 enum bloqueFinInstrucciones    = 63;
 enum palabrasPorBloque         = 4;
-enum bloquesPorCaché           = [ 4 /*L1*/, 8 /*L2*/];
+enum bloquesEnL1               = 4; // Por cada caché.
+enum bloquesEnL2               = 8;
+enum ciclosBloqueMemL2         = 40;
+enum ciclosBloqueL2L1          = 8;
 
 shared static Bloque!(Tipo.memoria) [64] memoriaPrincipal;
 
@@ -22,29 +28,23 @@ static void rellenarMemoria (palabra [] valoresRaw) {
     }
 }
 
-alias CachéL1Datos         = Caché!(1, TipoCaché.datos);
-alias CachéL1Instrucciones = Caché!(1, TipoCaché.instrucciones);
-alias CachéL2              = Caché!(2, TipoCaché.instrucciones);
+alias CachéL1Datos         = CachéL1!(TipoCaché.datos);
+alias CachéL1Instrucciones = CachéL1!(TipoCaché.instrucciones);
 
 enum TipoCaché {datos, instrucciones}
-class Caché (uint nivel, TipoCaché tipoCaché) {
-    static assert (nivel == 1 || nivel == 2);
-    import core.sync.mutex : Mutex;
-    this () {
-        //this.lock = new shared Mutex ();
-    }
-    Bloque!(Tipo.caché) [ bloquesPorCaché [nivel - 1] ] bloques;
+class CachéL1 (TipoCaché tipoCaché) {
+    Bloque!(Tipo.caché) [ bloquesEnL1 ] bloques;
 
     /// Se indexa igual que la memoria, pero índice es por palabra, no por bloque.
     /// Ejemplo de uso: auto a = caché [índiceEnMemoria];
     auto opIndex (uint índiceEnMemoria) {
-        scope (exit) lock.unlock;
-        while (!lock.tryLock) {
-            import reloj : relojazo;
-            // No se obtuvo la caché.
-            relojazo;
-        }
-        // Se obtuvo la caché.
+        assert (this.candado, `candado no inicializado`);
+        scope (exit) this.candado.unlock;
+
+        conseguirCandados ([this.candado]);
+        // Se obtuvo la L1 de este núcleo.
+
+        // Se revisa si está el dato en la caché para retornarlo.
         auto numBloqueMem = índiceEnMemoria / palabrasPorBloque;
         auto numPalabra   = índiceEnMemoria % palabrasPorBloque;
         foreach (bloque; bloques) {
@@ -52,13 +52,38 @@ class Caché (uint nivel, TipoCaché tipoCaché) {
                 return bloque [numPalabra];
             }
         }
-        assert (0, `TO DO: opIndex para Caché`);
         // No se encontró.
-        //return traerDeMemoria (numBloqueMem) [numPalabra];
+
+        assert (candadoL2, `candadoL2 no inicializado`);
+        conseguirCandados ([this.candado, candadoL2]);
+        // Se obtuvo la L2.
+    
+        if (bloques [numBloqueMem % bloques.length].modificado) {
+            // Es write back y está modificado => Hay que escribirlo a L2/mem.
+            foreach (i; 0..ciclosBloqueMemL2 + ciclosBloqueL2L1) {
+                relojazo;
+            }
+            //memoriaPrincipal [numBloqueMem] = 
+            assert (0, `TO DO: Escribir a memoria`);
+        }
+
+        // Se tiene el bloque libre para traerlo.
+        // Se intenta conseguir la otra L1 para ver si tiene el dato (snooping).
+        if (is (tipoCaché == TipoCaché.datos)) {
+            assert (candadoDeLaOtraL1, `candadoDeLaOtraL1 no inicializado`);
+            conseguirCandados ([this.candado, candadoL2, candadoDeLaOtraL1]);
+            assert (0, `TO DO: Snooping`);
+        }
+
+        cachéL2 [numBloqueMem];
+        assert (bloques [numBloqueMem % bloques.length].válido);
+
+        assert (0, `TO DO: Snooping y traer de mem/l2`);
     }
     /// Asigna un valor a memoria. Usa de índice el número de palabra,
     /// no bloque ni byte.
     void opIndexAssign (palabra porColocar, uint índiceEnMemoria) {
+        /+
         auto numBloqueMem = índiceEnMemoria / palabrasPorBloque;
         auto numPalabra   = índiceEnMemoria % palabrasPorBloque;
         auto bloque       = & bloques [numBloqueMem % bloques.length];
@@ -68,41 +93,89 @@ class Caché (uint nivel, TipoCaché tipoCaché) {
         }
         // Se coloca en la caché.
         bloque.palabras [numPalabra] = porColocar;
+        +/
+            assert (0, `TO DO: opIndexAssign`);
     }
 
+    /// Recibe un arreglo de candados, donde el último es el que todavía no se
+    /// ha conseguido y el resto son los que hay que tener (en orden)
+    /// para poder intentar conseguir el último.
+    private void conseguirCandados (shared Mutex [] candados) {
+        assert (candados.length);
+        if (candados.length == 1) {
+            while (!candados [0].tryLock) {
+                // No se consiguió, hay que esperarse al siguiente ciclo.
+                relojazo;
+            }
+        } else {
+            while (!candados [$-1].tryLock) {
+                // No lo consiguió, libera todos los que ya se tienen.
+                foreach (ref candado; candados [0..$-1]) {
+                    candado.unlock;
+                }
+                conseguirCandados (candados[0..$-1]);
+            }
+            // Lo consiguió, gg easy.
+        }
+    }
+
+    private uint númeroNúcleo;
+    invariant { assert (númeroNúcleo < cantidadNúcleos); }
+    auto ref candado () { return candadosL1 [númeroNúcleo]; }
+    auto ref candadoDeLaOtraL1 () {
+        static assert (cantidadNúcleos == 2);
+        return candadosL1 [this.númeroNúcleo == 0 ? 1 : 0];
+    }
+    // Usado para accesar cachés L1.
+}
+
+class CachéL2 {
+    auto opIndex (uint númeroBloqueEnMemoria) {
+        auto posBloques = númeroBloqueEnMemoria % bloques.length;
+        if ( !(
+        /**/ bloques [posBloques].válido 
+        /**/ && bloques [posBloques].bloqueEnMemoria == númeroBloqueEnMemoria)
+        ) {
+            // No se tiene, hay que traer de memoria.
+            foreach (i; 0..ciclosBloqueMemL2) {
+                relojazo;
+            }
+            this.bloques [posBloques] =
+            /**/ Bloque!(Tipo.caché)(memoriaPrincipal [númeroBloqueEnMemoria]);
+            assert (0, `TO DO: Traer de memoria`);
+        }
+        return bloques [posBloques];
+
+    }
+    private Bloque!(Tipo.caché) [ bloquesEnL2 ] bloques;
+}
+private __gshared CachéL2 cachéL2;
+
+/+
     /// Usa el bus para accesar la memoria y reemplaza una bloque de esta caché.
     /// Retorna el bloque obtenido.
     /// Desde otros módulos accesar por índice, no usar esta función.
     private auto /* Bloque!(Tipo.caché) */ traerDeMemoria (uint numBloqueMem) {
         assert (numBloqueMem < memoriaPrincipal.length);
         auto bloqueActual = bloques [numBloqueMem % bloques.length];
-        if (bloqueActual.sucio) { // Si está dirty, hay que guardarlo en memoria.
-            assert (bloqueActual.válido, `Bloques sucios deben ser válidos`);
-            //busAccesoAMemoria [numBloqueMem] = bloqueActual;
+        if (bloqueActual.modificado) { // Si está mod, hay que guardarlo en memoria.
+            assert (bloqueActual.válido, `Bloques modificados deben ser válidos`);
         }
-        //auto bloqueTraidoDeBus = this.busAccesoAMemoria [numBloqueMem];
-        //auto bloquePorColocarEnCaché
-        ///**/ = Bloque!(Tipo.caché) (cast (palabra [4]) bloqueTraidoDeBus.palabras, numBloqueMem);
-        //this.bloques [numBloqueMem % bloques.length] = bloquePorColocarEnCaché;
-        //return bloquePorColocarEnCaché;
     }
-
-    /// Retorna el índice de la posición de la caché que debe reemplazarse.
-    /// No se necesita cambiar m_índiceParaReemplazar en ninguna otra función.
-    private @property uint víctimaParaReemplazo () {
-        m_índiceParaReemplazar 
-        /**/ = ((m_índiceParaReemplazar + 1) % this.bloques.length.to!uint);
-        return m_índiceParaReemplazar;
++/
+static private shared Mutex [cantidadNúcleos] candadosL1;
+static private shared Mutex candadoL2; // Usado para accesar la L2 compartida.
+private shared static this () {
+    candadoL2 = new shared Mutex ();
+    foreach (i; 0..candadosL1.length) {
+        candadosL1 [i] = new shared Mutex ();
     }
-    static if (nivel == 1) {
-        private uint númeroNúcleo;
-    }
-    private uint m_índiceParaReemplazar; // Usado para víctimaParaReemplazo.
-    private shared Mutex lock;
 }
+
 
 enum Tipo {memoria, caché};
 struct Bloque (Tipo tipo) {
+    uint bloqueEnMemoria                     = 0;
     static if (tipo == Tipo.memoria) {
         // Es memoria, se inicializa con 1s.
         palabra [palabrasPorBloque] palabras = 1;
@@ -111,13 +184,13 @@ struct Bloque (Tipo tipo) {
         // Es caché, se inicializa con 0s.
         palabra [palabrasPorBloque] palabras = 0;
         bool válido                          = false;
-        bool sucio                           = false;
-        uint bloqueEnMemoria                 = 0;
+        bool modificado                      = false;
         /// Constructor para convertir bloques de memoria a bloques de caché.
-        this (palabra [palabrasPorBloque] palabras, uint bloqueEnMemoria) {
-            this.palabras        = palabras;
+        this (shared Bloque!(Tipo.memoria) bloquePorCopiar) {
+            this.palabras        = // Se le quita el shared.
+            /**/ cast (palabra [palabrasPorBloque]) bloquePorCopiar.palabras;
             this.válido          = true;
-            this.bloqueEnMemoria = bloqueEnMemoria;
+            this.bloqueEnMemoria = bloquePorCopiar.bloqueEnMemoria;
         }
         auto opIndex (uint numPalabra) {
             assert (numPalabra < palabras.length);
@@ -126,7 +199,7 @@ struct Bloque (Tipo tipo) {
 
         auto opIndexAssign (palabra porColocar, uint numPalabra) {
             assert (numPalabra < palabras.length);
-            this.sucio = true;
+            this.modificado = true;
             palabras [numPalabra] = porColocar;
         }
     }

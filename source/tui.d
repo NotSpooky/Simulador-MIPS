@@ -108,13 +108,14 @@ class TUI {
     /// Coloca un mensaje en la posición correspondiente al núcleo numNúcleo.
     void mostrar (T...)(uint numNúcleo, T mensaje) {
         lock.lock ();
+        scope (exit) lock.unlock ();
         escribirEn (líneaSalidaNúcleos + (numNúcleo * lineasSalidaPorNúcleo) + 1, mensaje);
-        lock.unlock ();
     }
 
     /// Recibe un carácter del usuario y lo retorna.
     auto esperarUsuario (bool terminóEjecución = false) {
         lock.lock ();
+        scope (exit) lock.unlock ();
         if (terminóEjecución) {
             static assert (cantidadFilasInstrucciones == 3, `Acá se supone que hay 3 filas.`);
             escribirEn (líneaInstruccionesUsuario
@@ -160,7 +161,6 @@ class TUI {
                 this.finEscritura;
             }
         }
-        lock.unlock ();
     }
     /// Número de fila que se presenta de la memoria en la pantalla.
     /// El byte correspondiente depende del ancho de la terminal.
