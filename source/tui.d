@@ -105,11 +105,13 @@ class TUI {
         finEscritura;
     }
 
-    /// Coloca un mensaje en la posición correspondiente al núcleo numNúcleo.
-    void mostrar (T...)(uint numNúcleo, T mensaje) {
+    /// Coloca un mensaje en la posición correspondiente al núcleo de núcleo 
+    /// de este hilo.
+    void mostrar (T...)(T mensaje) {
         lock.lock ();
+        import nucleo : Núcleo;
         scope (exit) lock.unlock ();
-        escribirEn (líneaSalidaNúcleos + (numNúcleo * lineasSalidaPorNúcleo) + 1, mensaje);
+        escribirEn (líneaSalidaNúcleos + (Núcleo.númeroNúcleo * lineasSalidaPorNúcleo) + 1, mensaje);
     }
 
     /// Recibe un carácter del usuario y lo retorna.
@@ -269,3 +271,5 @@ class TUI {
     }
     private Terminal terminal;
 }
+
+private __gshared TUI interfazDeUsuario = null;

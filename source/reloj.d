@@ -30,10 +30,11 @@ void esperarTick () {
     receiveOnly!Tick;
 }
 
+uint contador = 0;
 /// Se espera un ciclo más para intentar algo en el siguiente.
 void relojazo () {
-    esperarTick;
     Respuesta (Respuesta.Tipo.tock).enviar;
+    esperarTick;
 }
 
 /// Le dice al reloj que ya terminó de inicializarse un núcleo y puede empezar a
@@ -72,13 +73,19 @@ final class Reloj {
             }
             uint [] terminaronEjecución = []; // Números de núcleo por eliminar.
             foreach (i; 0 .. tidNúcleos.length) {
+            import std.variant;
                 receive (
                     (Respuesta respuesta) {
+                        import std.stdio;
                         if (respuesta.tipo == Respuesta.Tipo.terminóEjecución) {
                             // Si uno terminó la ejecución se agrega al arreglo.
                             terminaronEjecución ~= respuesta.númeroNúcleo;
                             interfaz.actualizarRegistros (respuesta.númeroNúcleo, respuesta.registros);
                         }
+                    }, 
+                    (Variant parámetrosInesperados) {
+                        import std.conv : text;
+                        assert (0, text (parámetrosInesperados));
                     }
                 );
             }

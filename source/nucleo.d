@@ -31,15 +31,16 @@ final class Núcleo {
         /**/ ~ contadorDePrograma.to!string);
     }
 
-    import tui : TUI;
-    void ejecutar (TUI salida) {
+    void ejecutar () {
         import interpretador : ExcepciónDeFinDePrograma, Instrucción, Código, interpretar;
         try {
             while (true) {
                 esperarTick;
                 auto instrucción = 
                 /**/ Instrucción (cachéInstrucciones [contadorDePrograma]);
-                interpretar (this, instrucción, salida);
+                interpretar (this, instrucción);
+                import std.stdio;
+                writeln ("Se obtuvo instrucción.");
                 contadorDePrograma ++;
                 // Envía mensaje informando que finalizó (un tock).
                 Respuesta (Respuesta.Tipo.tock).enviar;

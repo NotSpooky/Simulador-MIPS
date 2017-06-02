@@ -1,8 +1,7 @@
 import std.concurrency : spawn, thisTid, OwnerTerminated;
-import tui : TUI;
+import tui : TUI, interfazDeUsuario;
 import std.stdio : writeln;
 
-private __gshared TUI interfazDeUsuario = null;
 void main (string [] args)
 {
     import lectorarchivos : leerArchivo;
@@ -39,7 +38,7 @@ void iniciarEjecución (uint contadorPrograma, uint numNúcleo) {
     try {
         import nucleo;
         Núcleo núcleo = new Núcleo (contadorPrograma, numNúcleo);
-        núcleo.ejecutar (interfazDeUsuario);
+        núcleo.ejecutar;
     } catch (OwnerTerminated) {
         writeln (`Terminando hilo `, numNúcleo, `, hilo principal terminó.`);
     } catch (Throwable e) {

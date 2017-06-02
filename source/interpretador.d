@@ -37,9 +37,9 @@ enum Código : byte {
 }
 
 import nucleo : Núcleo;
-import tui : TUI;
-static void interpretar (Núcleo núcleo, Instrucción instrucción, TUI salida) {
-    salida.mostrar(núcleo.númeroNúcleo, `Ejecutando `, instrucción);
+import tui : interfazDeUsuario;
+static void interpretar (Núcleo núcleo, Instrucción instrucción) {
+    interfazDeUsuario.mostrar (`Ejecutando `, instrucción);
     with (instrucción) final switch (código) {
         case Código.DADDI:
             // Rx <-- (Ry) + n

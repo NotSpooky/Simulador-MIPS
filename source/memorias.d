@@ -2,8 +2,9 @@ module memorias;
 
 import std.conv        : to;
 import reloj           : relojazo;
-import nucleo          : cantidadNúcleos;
+import nucleo          : Núcleo, cantidadNúcleos;
 import core.sync.mutex : Mutex;
+import tui             : interfazDeUsuario;
 
 public alias palabra = int;
 enum bytesPorPalabra           = palabra.sizeof;
@@ -69,16 +70,27 @@ class CachéL1 (TipoCaché tipoCaché) {
 
         // Se tiene el bloque libre para traerlo.
         // Se intenta conseguir la otra L1 para ver si tiene el dato (snooping).
-        if (is (tipoCaché == TipoCaché.datos)) {
+        static if (tipoCaché == TipoCaché.datos) {
             assert (candadoDeLaOtraL1, `candadoDeLaOtraL1 no inicializado`);
             conseguirCandados ([this.candado, candadoL2, candadoDeLaOtraL1]);
-            assert (0, `TO DO: Snooping`);
+            debug {
+                import std.stdio;
+                writeln ("TO DO: Snoop dog");
+            }
+            candadoDeLaOtraL1.unlock;
         }
 
-        cachéL2 [numBloqueMem];
+        foreach (i; 0..ciclosBloqueL2L1) {
+            interfazDeUsuario.mostrar (`Trayendo bloque `, numBloqueMem, ` de L2: `, i + 1, '/', ciclosBloqueL2L1);
+            relojazo;
+        }
+        auto bloquePorColocarEnL1 = cachéL2 [numBloqueMem];
+        candadoL2.unlock;
+        this.bloques [numBloqueMem % bloques.length] = bloquePorColocarEnL1;
         assert (bloques [numBloqueMem % bloques.length].válido);
+        auto porRetornar =  this.bloques [numBloqueMem % bloques.length][numPalabra]; 
+        return porRetornar;
 
-        assert (0, `TO DO: Snooping y traer de mem/l2`);
     }
     /// Asigna un valor a memoria. Usa de índice el número de palabra,
     /// no bloque ni byte.
@@ -101,50 +113,48 @@ class CachéL1 (TipoCaché tipoCaché) {
     /// ha conseguido y el resto son los que hay que tener (en orden)
     /// para poder intentar conseguir el último.
     private void conseguirCandados (shared Mutex [] candados) {
+
         assert (candados.length);
-        if (candados.length == 1) {
-            while (!candados [0].tryLock) {
-                // No se consiguió, hay que esperarse al siguiente ciclo.
+        while (!candados [$-1].tryLock) {
+            interfazDeUsuario.mostrar (`Falló en obtener candado`);
+            // No se consiguió, hay que esperarse al siguiente ciclo.
+            if (candados.length == 1) {
                 relojazo;
-            }
-        } else {
-            while (!candados [$-1].tryLock) {
+            } else {
                 // No lo consiguió, libera todos los que ya se tienen.
-                foreach (ref candado; candados [0..$-1]) {
+                foreach (ref shared candado; candados [0..$-1]) {
                     candado.unlock;
                 }
-                conseguirCandados (candados[0..$-1]);
+                relojazo;
+                conseguirCandados (candados [0..$-1]);
             }
-            // Lo consiguió, gg easy.
         }
     }
 
-    private uint númeroNúcleo;
-    invariant { assert (númeroNúcleo < cantidadNúcleos); }
-    auto ref candado () { return candadosL1 [númeroNúcleo]; }
+    auto ref candado () { return candadosL1 [Núcleo.númeroNúcleo]; }
     auto ref candadoDeLaOtraL1 () {
         static assert (cantidadNúcleos == 2);
-        return candadosL1 [this.númeroNúcleo == 0 ? 1 : 0];
+        return candadosL1 [Núcleo.númeroNúcleo == 0 ? 1 : 0];
     }
     // Usado para accesar cachés L1.
 }
 
 class CachéL2 {
+    /// Retorna el bloque correspondiente al númeroBloqueEnMemoria.
+    /// Si no está en la caché lo trae de memoria.
     auto opIndex (uint númeroBloqueEnMemoria) {
-        auto posBloques = númeroBloqueEnMemoria % bloques.length;
-        if ( !(
-        /**/ bloques [posBloques].válido 
-        /**/ && bloques [posBloques].bloqueEnMemoria == númeroBloqueEnMemoria)
-        ) {
+        auto posBloque = númeroBloqueEnMemoria % bloques.length;
+        if ( !( bloques [posBloque].válido 
+        /**/ && bloques [posBloque].bloqueEnMemoria == númeroBloqueEnMemoria) ) {
             // No se tiene, hay que traer de memoria.
             foreach (i; 0..ciclosBloqueMemL2) {
+                interfazDeUsuario.mostrar (`Trayendo bloque `, númeroBloqueEnMemoria, ` de Mem: `, i+1, '/',ciclosBloqueMemL2);
                 relojazo;
             }
-            this.bloques [posBloques] =
+            this.bloques [posBloque] =
             /**/ Bloque!(Tipo.caché)(memoriaPrincipal [númeroBloqueEnMemoria]);
-            assert (0, `TO DO: Traer de memoria`);
         }
-        return bloques [posBloques];
+        return this.bloques [posBloque];
 
     }
     private Bloque!(Tipo.caché) [ bloquesEnL2 ] bloques;
@@ -166,6 +176,7 @@ private __gshared CachéL2 cachéL2;
 static private shared Mutex [cantidadNúcleos] candadosL1;
 static private shared Mutex candadoL2; // Usado para accesar la L2 compartida.
 private shared static this () {
+    cachéL2 = new CachéL2 ();
     candadoL2 = new shared Mutex ();
     foreach (i; 0..candadosL1.length) {
         candadosL1 [i] = new shared Mutex ();
