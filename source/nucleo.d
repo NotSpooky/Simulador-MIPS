@@ -15,9 +15,10 @@ final class Núcleo {
         enviarMensajeDeInicio;
     }
     @disable this ();
-    uint contadorDePrograma; /// Tiene el número de instrucción, no de bloque.
+    /// Tiene el número de instrucción, no de bloque ni de byte.
+    uint contadorDePrograma; 
     static Registros registros;
-    import memorias : CachéL1Instrucciones, CachéL1Datos, CachéL2;
+    import memorias : CachéL1Instrucciones, CachéL1Datos;
     CachéL1Instrucciones   cachéInstrucciones = null;
     static uint númeroNúcleo = -1;
 
@@ -51,10 +52,7 @@ final class Núcleo {
             return;
         }
     }
-    auto ref cachéDatos () {
-        pragma (msg, `TO DO: Bloquear caché de datos`);
-        return cachésDatos [númeroNúcleo];
-    }
+    auto ref cachéDatos () { return cachésDatos [númeroNúcleo]; }
     /// Son compartidas, una para cada núcleo.
     private __gshared CachéL1Datos [cantidadNúcleos] cachésDatos;
 }

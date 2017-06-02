@@ -30,7 +30,6 @@ void esperarTick () {
     receiveOnly!Tick;
 }
 
-uint contador = 0;
 /// Se espera un ciclo más para intentar algo en el siguiente.
 void relojazo () {
     Respuesta (Respuesta.Tipo.tock).enviar;
