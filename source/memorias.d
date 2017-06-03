@@ -60,13 +60,18 @@ class CachéL1 (TipoCaché tipoCaché) {
         // Se obtuvo la L2.
     
         static if (tipoCaché == TipoCaché.datos) {
-            if (bloques [numBloqueMem % bloques.length].modificado) {
+            auto bloqueVíctima = &bloques [numBloqueMem % bloques.length];
+            if (bloqueVíctima.modificado) {
                 // Es write back y está modificado => Hay que escribirlo a L2/mem.
                 foreach (i; 0..ciclosBloqueMemL2 + ciclosBloqueL2L1) {
+                    interfazDeUsuario.mostrar (
+                    /**/ `Escribiendo bloque modificado en memoria: `, i+1
+                    /**/ , '/', ciclosBloqueL2L1 + ciclosBloqueMemL2);
                     relojazo;
                 }
-                //memoriaPrincipal [numBloqueMem] = 
-                assert (0, `TO DO: Escribir a memoria`);
+                memoriaPrincipal [numBloqueMem] = bloqueVíctima.palabras;
+                bloqueVíctima.válido     = false;
+                bloqueVíctima.modificado = false;
             }
 
             // Se tiene el bloque libre para traerlo.
