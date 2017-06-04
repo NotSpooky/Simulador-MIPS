@@ -37,6 +37,11 @@ final class Núcleo {
                 esperarTick;
                 auto instrucción = 
                 /**/ Instrucción (cachéInstrucciones [contadorDePrograma]);
+                import std.file;
+                import std.conv :text;
+                if (númeroNúcleo == 1) {
+                `oveja.txt`.append (text (`Instrucción `, instrucción, `PC: `, contadorDePrograma * 4, '\n'));
+                }
                 interpretar (this, instrucción);
                 contadorDePrograma ++;
                 // Envía mensaje informando que finalizó (un tock).

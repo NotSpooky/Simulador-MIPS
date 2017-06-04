@@ -10,8 +10,8 @@ struct Instrucción {
     @disable this ();
     import memorias : Bloque, Tipo, palabra, toBytes;
     @safe this (palabra palabraInstrucción) {
-        import std.conv : to;
         auto enBytes = palabraInstrucción.toBytes;
+        import std.conv : to;
         this.código = enBytes [0].to!Código;
         this.rf1    = enBytes [1];
         this.rf2    = enBytes [2];
@@ -95,8 +95,9 @@ static void interpretar (Núcleo núcleo, Instrucción instrucción) {
         case Código.JAL:
             // R31 <-- PC, PC += n
             assert (rf1 == 0 && rf2 == 0, `rf1 y rf2 deberían ser 0`);
-            núcleo.registros [31] = núcleo.contadorDePrograma ++;
-            núcleo.contadorDePrograma += inm;
+            assert (inm % 4 == 0, `Se esperaba un inmediato múltiplo de 4.`);
+            núcleo.registros [31] = núcleo.contadorDePrograma + 1;
+            núcleo.contadorDePrograma += (inm/4);
             break;
         case Código.JR:
             // PC <-- (Rx)
