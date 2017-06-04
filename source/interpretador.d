@@ -40,7 +40,7 @@ import nucleo : Núcleo;
 import tui : interfazDeUsuario;
 import memorias : memoriaPrincipal, bytesPorPalabra, cachéL1Datos;
 static void interpretar (Núcleo núcleo, Instrucción instrucción) {
-    interfazDeUsuario.mostrar (`Ejecutando `, instrucción);
+    interfazDeUsuario.mostrarInstrucción (`Ejecutando `, instrucción);
     with (instrucción) final switch (código) {
         case Código.DADDI:
             // Rx <-- (Ry) + n

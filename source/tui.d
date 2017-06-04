@@ -105,13 +105,26 @@ class TUI {
         finEscritura;
     }
 
-    /// Coloca un mensaje en la posición correspondiente al núcleo de núcleo 
+    private const líneaMensajeInstrucción () {
+        import nucleo : Núcleo;
+        return líneaSalidaNúcleos + (Núcleo.númeroNúcleo * lineasSalidaPorNúcleo) + 1;
+    }
+
+    /// Coloca un mensaje relativo a cuál instrucción se está ejecutando
+    /// en la posición correspondiente a este núcleo.
+    void mostrarInstrucción (T...)(T mensaje) {
+        lock.lock ();
+        scope (exit) lock.unlock ();
+        escribirEn (líneaMensajeInstrucción, mensaje);
+        escribirEn (líneaMensajeInstrucción + 1, ""); // limpia la otra.
+    }
+
+    /// Coloca un mensaje en la posición correspondiente al número de núcleo 
     /// de este hilo.
     void mostrar (T...)(T mensaje) {
         lock.lock ();
-        import nucleo : Núcleo;
         scope (exit) lock.unlock ();
-        escribirEn (líneaSalidaNúcleos + (Núcleo.númeroNúcleo * lineasSalidaPorNúcleo) + 1, mensaje);
+        escribirEn (líneaMensajeInstrucción + 1, mensaje);
     }
 
     /// Recibe un carácter del usuario y lo retorna.
