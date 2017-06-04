@@ -2,6 +2,7 @@ module nucleo;
 
 import std.conv : to;
 import reloj : esperarTick, Respuesta, enviarMensajeDeInicio;
+import memorias : CachéL1Instrucciones, bloqueFinInstrucciones, bloqueInicioInstrucciones, palabrasPorBloque;
 
 alias palabra = uint;
 enum cantidadNúcleos = 2;
@@ -11,20 +12,17 @@ final class Núcleo {
         this.númeroNúcleo  = númeroNúcleo;
         this.contadorDePrograma = contadorDePrograma;
         cachéInstrucciones = new CachéL1Instrucciones ();
-        cachéDatos         = new CachéL1Datos ();
         enviarMensajeDeInicio;
     }
     @disable this ();
     /// Tiene el número de instrucción, no de bloque ni de byte.
     uint contadorDePrograma; 
     static Registros registros;
-    import memorias : CachéL1Instrucciones, CachéL1Datos;
-    CachéL1Instrucciones   cachéInstrucciones = null;
-    static uint númeroNúcleo = -1;
+    CachéL1Instrucciones cachéInstrucciones = null;
+    /// Número de núcleo que este hilo representa.
+    static uint númeroNúcleo = -1; 
 
     invariant {
-        import memorias : bloqueInicioInstrucciones, bloqueFinInstrucciones
-        /**/ , palabrasPorBloque;
         assert (
         /**/ contadorDePrograma >= bloqueInicioInstrucciones * palabrasPorBloque
         /**/ && contadorDePrograma <= bloqueFinInstrucciones * palabrasPorBloque,
@@ -50,9 +48,6 @@ final class Núcleo {
             return;
         }
     }
-    auto ref cachéDatos () { return cachésDatos [númeroNúcleo]; }
-    /// Son compartidas, una para cada núcleo.
-    private __gshared CachéL1Datos [cantidadNúcleos] cachésDatos;
 }
 
 struct Registros {

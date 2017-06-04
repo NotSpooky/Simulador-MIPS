@@ -38,6 +38,7 @@ enum Código : byte {
 
 import nucleo : Núcleo;
 import tui : interfazDeUsuario;
+import memorias : memoriaPrincipal, bytesPorPalabra, cachéL1Datos;
 static void interpretar (Núcleo núcleo, Instrucción instrucción) {
     interfazDeUsuario.mostrar (`Ejecutando `, instrucción);
     with (instrucción) final switch (código) {
@@ -107,23 +108,17 @@ static void interpretar (Núcleo núcleo, Instrucción instrucción) {
             // Rx <-- Memoria (n + (Ry))
             int Ry = núcleo.registros [rf1];
             int posBase = Ry + inm;
-            import memorias : memoriaPrincipal, bytesPorPalabra;
             assert ((posBase % bytesPorPalabra) == 0
             /**/ , `LW no alineado: ` ~ posBase.to!string);
-            /+
             uint posición = (posBase / bytesPorPalabra).to!int;
-            assert (posición >= 0 && posición < 256);
-            núcleo.registros [rf2]
-            /**/ = núcleo.cachéDatos [posición];
+            assert (posición >= 0 && posición < 256, `Pos fuera de memoria.`);
+            núcleo.registros [rf2] = cachéL1Datos [posición];
             break;
-            +/
-            assert (0, `TO DO: LW`);
         case Código.SW:
             // Memoria (n + (Ry)) <-- Rx 
             int Rx = núcleo.registros [rf2];
             int Ry = núcleo.registros [rf1];
             int posBase = Ry + inm;
-            import memorias : memoriaPrincipal, bytesPorPalabra;
             assert ((posBase % bytesPorPalabra) == 0
             /**/ , `SW no alineado: ` ~ posBase.to!string);
             uint posición = (posBase / bytesPorPalabra).to!int;
