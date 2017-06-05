@@ -18,7 +18,7 @@ enum cantidadFilasInstrucciones = 3;
 // Se deja un espacio en blanco antes.
 enum líneaSalidaNúcleos         = líneaInstruccionesUsuario + cantidadFilasInstrucciones + 1; 
 // Una para el mensaje de número de núcleo, otra para la instrucción ejecutada.
-enum lineasSalidaPorNúcleo      = 3;
+enum lineasSalidaPorNúcleo      = 4;
 // Para los writes normales de la terminal.
 enum líneaSalidaEstándar        = líneaSalidaNúcleos 
                                  + (lineasSalidaPorNúcleo * cantidadNúcleos) 
@@ -115,8 +115,10 @@ class TUI {
     void mostrarInstrucción (T...)(T mensaje) {
         lock.lock ();
         scope (exit) lock.unlock ();
+        static assert (lineasSalidaPorNúcleo == 4);
         escribirEn (líneaMensajeInstrucción, mensaje);
         escribirEn (líneaMensajeInstrucción + 1, ""); // limpia la otra.
+        escribirEn (líneaMensajeInstrucción + 2, ""); // limpia la otra.
     }
 
     /// Coloca un mensaje en la posición correspondiente al número de núcleo 
@@ -125,6 +127,12 @@ class TUI {
         lock.lock ();
         scope (exit) lock.unlock ();
         escribirEn (líneaMensajeInstrucción + 1, mensaje);
+    }
+
+    void mostrarCambioContexto (T...)(T mensaje) {
+        lock.lock;
+        scope (exit) lock.unlock ();
+        escribirEn (líneaMensajeInstrucción + 2, mensaje);
     }
 
     /// Recibe un carácter del usuario y lo retorna.

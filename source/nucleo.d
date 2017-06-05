@@ -4,6 +4,8 @@ import std.conv : to;
 import reloj : esperarTick, Respuesta, enviarMensajeDeInicio;
 import memorias : CachéL1Instrucciones, bloqueFinInstrucciones, bloqueInicioInstrucciones, palabrasPorBloque;
 
+enum quantumEspecificadoPorUsuario = 7;
+
 alias palabra = uint;
 enum cantidadNúcleos = 2;
 final class Núcleo {
@@ -17,6 +19,8 @@ final class Núcleo {
     @disable this ();
     /// Tiene el número de instrucción, no de bloque ni de byte.
     uint contadorDePrograma; 
+    /// Cuando llega al especificado por el usuario, cambia contexto.
+    uint contadorQuantum = 0;
     static Registros registros;
     CachéL1Instrucciones cachéInstrucciones = null;
     /// Número de núcleo que este hilo representa.
@@ -31,9 +35,21 @@ final class Núcleo {
     }
 
     void ejecutar () {
+        candadoContextos = new shared Mutex ();
         import interpretador : ExcepciónDeFinDePrograma, Instrucción, Código, interpretar;
         try {
             while (true) {
+                if (contadorQuantum == quantumEspecificadoPorUsuario) {
+                    candadoContextos.lock;
+                    contextos ~= this.registros;
+                    contadorQuantum = 0;
+                    this.registros = contextos [0];
+                    contextos = contextos [1..$];
+                    candadoContextos.unlock;
+                    import tui : interfazDeUsuario;
+                    interfazDeUsuario.mostrarCambioContexto ("Cambiando de contexto");
+                }
+                contadorQuantum ++;
                 esperarTick;
                 auto instrucción = Instrucción (cachéInstrucciones [contadorDePrograma]);
                 interpretar (this, instrucción);
@@ -42,6 +58,9 @@ final class Núcleo {
                 Respuesta (Respuesta.Tipo.tock).enviar;
             } 
         } catch (ExcepciónDeFinDePrograma) {
+            candadoContextos.lock;
+            static assert (0, `TO DO`);
+            candadoContextos.unlock;
             import reloj : Respuesta;
             Respuesta (Respuesta.Tipo.terminóEjecución).enviar;
             return;
@@ -69,3 +88,6 @@ struct Registros {
     alias registros this;
 }
 
+__gshared Registros [] contextos = [];
+import core.thread : Mutex;
+shared Mutex candadoContextos;
