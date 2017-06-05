@@ -39,10 +39,11 @@ class CachéL1 (TipoCaché tipoCaché) {
     /// Se indexa igual que la memoria, pero índice es por palabra, no por bloque.
     /// Ejemplo de uso: auto a = caché [índiceEnMemoria];
     auto opIndex (uint índiceEnMemoria) {
-        assert (this.candado, `candado no inicializado`);
-        scope (exit) this.candado.unlock;
-
-        conseguirCandados ([this.candado]);
+        static if (tipoCaché == TipoCaché.datos) {
+            assert (this.candado, `candado no inicializado`);
+            conseguirCandados ([this.candado]);
+            scope (exit) this.candado.unlock;
+        }
         // Se obtuvo la L1 de este núcleo.
 
         // Se revisa si está el dato en la caché para retornarlo.
@@ -56,11 +57,10 @@ class CachéL1 (TipoCaché tipoCaché) {
 
         // No se encontró.
 
-        assert (candadoL2, `candadoL2 no inicializado`);
-        conseguirCandados ([this.candado, candadoL2]);
-        // Se obtuvo la L2.
-    
         static if (tipoCaché == TipoCaché.datos) {
+            assert (candadoL2, `candadoL2 no inicializado`);
+            conseguirCandados ([this.candado, candadoL2]);
+            // Se obtuvo la L2.
             if (bloqueBuscado.modificado) { 
                 // Se tiene que escribir a memoria porque es write back.
                 assert (bloqueBuscado.válido);
@@ -85,14 +85,24 @@ class CachéL1 (TipoCaché tipoCaché) {
             }
             /// No está en la otra L1, se suelta esa caché y se busca en L2.
             candadoDeLaOtraL1.unlock;
+            foreach (i; 0..ciclosBloqueL2L1) {
+                interfazDeUsuario.mostrar (`Trayendo bloque `, numBloqueMem, ` de L2: `, i + 1, '/', ciclosBloqueL2L1);
+                relojazo;
+            }
+            (*bloqueBuscado) = cachéL2 [numBloqueMem];
+            candadoL2.unlock;
+        } else {
+            assert (candadoInstrucciones);
+            conseguirCandados ([candadoInstrucciones]);
+            // Se trae de memoria.
+            foreach (i; 0..ciclosBloqueMemL2) {
+                interfazDeUsuario.mostrar (`Trayendo bloque de instrucción: `, numBloqueMem, ` de Mem: `, i + 1, '/', ciclosBloqueMemL2);
+                relojazo;
+            }
+            (*bloqueBuscado) = Bloque!(Tipo.caché) (memoriaPrincipal [numBloqueMem], numBloqueMem);
+            candadoInstrucciones.unlock;
         }
 
-        foreach (i; 0..ciclosBloqueL2L1) {
-            interfazDeUsuario.mostrar (`Trayendo bloque `, numBloqueMem, ` de L2: `, i + 1, '/', ciclosBloqueL2L1);
-            relojazo;
-        }
-        (*bloqueBuscado) = cachéL2 [numBloqueMem];
-        candadoL2.unlock;
         assert (bloqueBuscado.válido);
         return (*bloqueBuscado)[numPalabra]; 
 
@@ -102,18 +112,6 @@ class CachéL1 (TipoCaché tipoCaché) {
     /// Usa de índice el número de palabra, no bloque ni byte.
     /// Usado para stores.
     void opIndexAssign (palabra porColocar, uint índiceEnMemoria) {
-        /+
-        auto numBloqueMem = índiceEnMemoria / palabrasPorBloque;
-        auto numPalabra   = índiceEnMemoria % palabrasPorBloque;
-        auto bloque       = & bloques [numBloqueMem % bloques.length];
-        if (!bloque.válido || bloque.bloqueEnMemoria != numBloqueMem) {
-            // Miss, hay que traer de memoria.
-            traerDeMemoria (numBloqueMem);
-        }
-        // Se coloca en la caché.
-        bloque.palabras [numPalabra] = porColocar;
-        +/
-            assert (0, `TO DO: opIndexAssign`);
     }
 
     /// Envia bloquePorMandar de caché L1 a memoria.
@@ -184,6 +182,13 @@ class CachéL2 {
         return this.bloques [posBloque];
 
     }
+    void invalidar (uint numBloqueMem) {
+        auto posBloque = numBloqueMem % bloques.length;
+        if (bloques [posBloque].válido && bloques [posBloque].bloqueEnMemoria == numBloqueMem) {
+            bloques [posBloque].válido = false;
+        }
+        
+    }
     private Bloque!(Tipo.caché) [ bloquesEnL2 ] bloques;
 }
 
@@ -192,11 +197,14 @@ private __gshared CachéL1Datos [cantidadNúcleos] cachésL1Datos;
 
 static private shared Mutex [cantidadNúcleos] candadosL1;
 static private shared Mutex candadoL2; // Usado para accesar la L2 compartida.
+// Usado para accesar las instrucciones.
+static private shared Mutex candadoInstrucciones; 
 
 /// Constructor de módulo para inicializar variables compartidas.
 private shared static this () {
     cachéL2 = new CachéL2 ();
     candadoL2 = new shared Mutex ();
+    candadoInstrucciones = new shared Mutex ();
     static assert (candadosL1.length == cantidadNúcleos);
     foreach (i; 0..cantidadNúcleos) {
         candadosL1    [i] = new shared Mutex ();
