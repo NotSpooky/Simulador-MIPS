@@ -78,6 +78,7 @@ class CachéL1 (TipoCaché tipoCaché) {
                 bloqueBuscado.palabras   = bloqueOtraL1.palabras;
                 bloqueBuscado.válido     = true;
                 bloqueBuscado.modificado = false;
+                bloqueOtraL1.modificado  = false;
                 mandarAMemoria (bloqueOtraL1);
                 candadoDeLaOtraL1.unlock;
                 candadoL2.unlock;
@@ -108,10 +109,67 @@ class CachéL1 (TipoCaché tipoCaché) {
 
     }
 
-    /// Asigna un valor a memoria. 
-    /// Usa de índice el número de palabra, no bloque ni byte.
-    /// Usado para stores.
-    void opIndexAssign (palabra porColocar, uint índiceEnMemoria) {
+    static if (tipoCaché == TipoCaché.datos) {
+        /// Asigna un valor a memoria. 
+        /// Usa de índice el número de palabra, no bloque ni byte.
+        /// Usado para stores.
+        void opIndexAssign (palabra porColocar, uint índiceEnMemoria) {
+            assert (this.candado, `candado no inicializado`);
+            conseguirCandados ([this.candado]);
+            scope (exit) this.candado.unlock;
+            // Se obtuvo la L1 de este núcleo.
+
+            // Se revisa si está el dato en la caché para retornarlo.
+            auto numBloqueMem = índiceEnMemoria / palabrasPorBloque;
+            auto numPalabra   = índiceEnMemoria % palabrasPorBloque;
+            auto numBloqueL1  = numBloqueMem % this.bloques.length;
+            auto bloqueBuscado = &this.bloques [numBloqueL1];
+            if (bloqueBuscado.válido && bloqueBuscado.bloqueEnMemoria == numBloqueMem) {
+                (*bloqueBuscado)[numPalabra] = porColocar;
+            }
+
+            // No se encontró.
+            assert (candadoL2, `candadoL2 no inicializado`);
+            conseguirCandados ([this.candado, candadoL2]);
+            // Se obtuvo la L2.
+            if (bloqueBuscado.modificado) { 
+                // Se tiene que escribir a memoria porque es write back.
+                assert (bloqueBuscado.válido, `bloqueBuscado no es válido.`);
+                mandarAMemoria (bloqueBuscado);
+            }
+
+            // Se tiene el bloque libre para traerlo.
+            // Se intenta conseguir la otra L1 para ver si tiene el dato (snooping).
+            assert (candadoDeLaOtraL1, `candadoDeLaOtraL1 no inicializado`);
+            conseguirCandados ([this.candado, candadoL2, candadoDeLaOtraL1]);
+            auto bloqueOtraL1 = &L1OtroNúcleo.bloques [numBloqueL1];
+            if (bloqueOtraL1.modificado && bloqueOtraL1.bloqueEnMemoria == numBloqueMem) {
+                // El otro lo tiene
+                assert (bloqueOtraL1.válido, `Otra L1 no es válido.`);
+                bloqueBuscado.palabras   = bloqueOtraL1.palabras;
+                bloqueBuscado.válido     = true;
+                bloqueBuscado.modificado = true;
+                bloqueOtraL1.válido      = false;
+                bloqueOtraL1.modificado  = false;
+                mandarAMemoria (bloqueOtraL1);
+                candadoDeLaOtraL1.unlock;
+                candadoL2.unlock;
+                (*bloqueBuscado) [numPalabra] = porColocar;
+                cachéL2.invalidar (numBloqueMem);
+                return;
+            }
+
+            /// No está en la otra L1, se suelta esa caché y se busca en L2.
+            candadoDeLaOtraL1.unlock;
+            foreach (i; 0..ciclosBloqueL2L1) {
+                interfazDeUsuario.mostrar (`Trayendo bloque `, numBloqueMem, ` de L2: `, i + 1, '/', ciclosBloqueL2L1);
+                relojazo;
+            }
+            (*bloqueBuscado) = cachéL2 [numBloqueMem];
+            cachéL2.invalidar (numBloqueMem);
+            (*bloqueBuscado) [numPalabra] = porColocar;
+            candadoL2.unlock;
+        }
     }
 
     /// Envia bloquePorMandar de caché L1 a memoria.
@@ -135,7 +193,7 @@ class CachéL1 (TipoCaché tipoCaché) {
     /// para poder intentar conseguir el último.
     private void conseguirCandados (shared Mutex [] candados) {
 
-        assert (candados.length);
+        assert (candados.length, `No se recibieron candados.`);
         while (!candados [$-1].tryLock) {
             interfazDeUsuario.mostrar (`Falló en obtener candado`);
             // No se consiguió, hay que esperarse al siguiente ciclo.
