@@ -116,7 +116,6 @@ class TUI {
     void mostrarInstrucción (T...)(T mensaje) {
         lock.lock ();
         scope (exit) lock.unlock ();
-        static assert (lineasSalidaPorNúcleo == 4);
         escribirEn (líneaMensajeInstrucción, mensaje);
         escribirEn (líneaMensajeInstrucción + 1, ""); // limpia la otra.
         escribirEn (líneaMensajeInstrucción + 2, ""); // limpia la otra.

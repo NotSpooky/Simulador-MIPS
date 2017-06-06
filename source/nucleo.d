@@ -12,27 +12,17 @@ final class Núcleo {
     this (uint contadorDePrograma, uint númeroNúcleo /*Identificador*/) {
         assert (númeroNúcleo >= 0 && númeroNúcleo < cantidadNúcleos);
         this.númeroNúcleo  = númeroNúcleo;
-        this.contadorDePrograma = contadorDePrograma;
+        this.registros.contadorDePrograma = contadorDePrograma;
         cachéInstrucciones = new CachéL1Instrucciones ();
         enviarMensajeDeInicio;
     }
     @disable this ();
-    /// Tiene el número de instrucción, no de bloque ni de byte.
-    uint contadorDePrograma; 
     /// Cuando llega al especificado por el usuario, cambia contexto.
     uint contadorQuantum = 0;
     static Registros registros;
     CachéL1Instrucciones cachéInstrucciones = null;
     /// Número de núcleo que este hilo representa.
     static uint númeroNúcleo = -1; 
-
-    invariant {
-        assert (
-        /**/ contadorDePrograma >= bloqueInicioInstrucciones * palabrasPorBloque
-        /**/ && contadorDePrograma <= bloqueFinInstrucciones * palabrasPorBloque,
-        /**/ `ContadorDePrograma fuera de rango permitido: ` 
-        /**/ ~ contadorDePrograma.to!string);
-    }
 
     void ejecutar () {
         candadoContextos = new shared Mutex ();
@@ -50,7 +40,7 @@ final class Núcleo {
             }
             contadorQuantum ++;
             esperarTick;
-            auto instrucción = Instrucción (cachéInstrucciones [contadorDePrograma]);
+            auto instrucción = Instrucción (cachéInstrucciones [registros.contadorDePrograma]);
             try {
                 interpretar (this, instrucción);
             } catch (ExcepciónDeFinDePrograma) {
@@ -68,7 +58,7 @@ final class Núcleo {
                     candadoContextos.unlock;
                 }
             }
-            contadorDePrograma ++;
+            registros.contadorDePrograma ++;
             // Envía mensaje informando que finalizó (un tock).
             Respuesta (Respuesta.Tipo.tock).enviar;
         } 
@@ -78,6 +68,8 @@ final class Núcleo {
 struct Registros {
     palabra [32] registros = 0;
     palabra      rl;
+    /// Tiene el número de instrucción, no de bloque ni de byte.
+    uint contadorDePrograma; 
     /// Escribir a la posición 0 no es válido.
     void opIndexAssign (palabra nuevoVal, uint posición) {
         assert (posición >= 1 && posición < 32, `Registro fuera de rango: `
@@ -87,12 +79,21 @@ struct Registros {
     /// Para imprimirlo en pantalla.
     void toString (scope void delegate (const (char) []) sacar) const {
         import std.format;
+        sacar ( format (`PC: %02X `, this.contadorDePrograma) );
         foreach (i, registro; registros) {
-            sacar (format (`R%02d: %08X `, i, registro));
+            sacar ( format (`R%02d: %08X `, i, registro) );
         }
-        sacar (format (`RL: %08X`, this.rl));
+        sacar ( format (`RL: %08X`, this.rl) );
     }
     alias registros this;
+
+    invariant {
+        assert (
+        /**/ contadorDePrograma >= bloqueInicioInstrucciones * palabrasPorBloque
+        /**/ && contadorDePrograma <= bloqueFinInstrucciones * palabrasPorBloque,
+        /**/ `ContadorDePrograma fuera de rango permitido: ` 
+        /**/ ~ contadorDePrograma.to!string);
+    }
 }
 
 __gshared Registros [] contextos = [];

@@ -81,7 +81,7 @@ static void interpretar (Núcleo núcleo, Instrucción instrucción) {
             assert (rf2 == 0, `rf2 debe ser 0`);
             if (Rx == 0) {
                 // El 1 se suma automáticamente
-                núcleo.contadorDePrograma += inm; 
+                núcleo.registros.contadorDePrograma += inm; 
             }
             break;
         case Código.BNEZ:
@@ -89,21 +89,21 @@ static void interpretar (Núcleo núcleo, Instrucción instrucción) {
             auto Rx = núcleo.registros [rf1];
             assert (rf2 == 0, `rf2 debe ser 0`);
             if (Rx != 0) {
-                núcleo.contadorDePrograma += inm;
+                núcleo.registros.contadorDePrograma += inm;
             }
             break;
         case Código.JAL:
             // R31 <-- PC, PC += n
             assert (rf1 == 0 && rf2 == 0, `rf1 y rf2 deberían ser 0`);
             assert (inm % 4 == 0, `Se esperaba un inmediato múltiplo de 4.`);
-            núcleo.registros [31] = núcleo.contadorDePrograma + 1;
-            núcleo.contadorDePrograma += (inm/4);
+            núcleo.registros [31] = núcleo.registros.contadorDePrograma;
+            núcleo.registros.contadorDePrograma += (inm/4);
             break;
         case Código.JR:
             // PC <-- (Rx)
             assert (rf2 == 0 && inm == 0, `rf2 e inm deberían ser 0`);
             auto Rx = núcleo.registros [rf1];
-            núcleo.contadorDePrograma = Rx;
+            núcleo.registros.contadorDePrograma = Rx;
             break;
         case Código.LW:
             // Rx <-- Memoria (n + (Ry))
