@@ -18,6 +18,7 @@ struct Respuesta {
     Tipo tipo;
     uint númeroNúcleo;
     Registros registros;
+    //Candado [] candadosPorLiberar = [];
     /// Envía este mensaje al reloj.
     void enviar () {
         tidReloj.send (this); 
@@ -41,6 +42,7 @@ void relojazo () {
 void enviarMensajeDeInicio () {
     tidReloj.send (Núcleo.númeroNúcleo);
 }
+shared cicloActual = 0; // Cantidad de relojazos.
 
 final class Reloj {
     this () {
@@ -56,7 +58,6 @@ final class Reloj {
      **************************************************************************/
     void iniciar (HiloDeNúcleoConIdentificador [] tidNúcleos, TUI interfaz) {
         import std.algorithm : countUntil, remove, map;
-        uint cantidadTicks = 0; // "Relojazos"
         // Se espera a que se inicialicen.
         foreach (i; 0 .. tidNúcleos.length) {
             receive ( 
@@ -65,7 +66,8 @@ final class Reloj {
             );
         }
         while (tidNúcleos.length) {
-            cantidadTicks ++;
+            import core.atomic;
+            cicloActual.atomicOp!`+=`(1);
             // A cada núcleo se le envía un tick.
             foreach (ref tidNúcleo; tidNúcleos.map!`a.tid`) {
                 tidNúcleo.send (Tick ());
