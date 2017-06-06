@@ -5,7 +5,7 @@ import std.stdio : writeln;
 void main (string [] args)
 {
     import lectorarchivos : leerArchivo;
-    import memorias : rellenarMemoria, bloqueInicioInstrucciones, toBytes
+    import memorias : rellenarMemoria, bloqueInicioInstrucciones
     /**/ , memoriaPrincipal, palabrasPorBloque;
     // TO DO: Preguntarle al usuario la ubicación del archivo.
     auto programa = (args.length > 1 ? args [1] : `source/test.txt`).leerArchivo;

@@ -4,18 +4,18 @@ import std.conv : to;
 
 struct Instrucción {
     Código código;
-    byte rf1;
-    byte rf2;
+    uint rf1;
+    uint rf2;
     short inm;
     @disable this ();
-    import memorias : Bloque, Tipo, palabra, toBytes;
+    import memorias : Bloque, Tipo, palabra;
     @safe this (palabra palabraInstrucción) {
-        auto enBytes = palabraInstrucción.toBytes;
         import std.conv : to;
-        this.código = enBytes [0].to!Código;
-        this.rf1    = enBytes [1];
-        this.rf2    = enBytes [2];
-        this.inm    = enBytes [3];
+        this.código = ((palabraInstrucción >> 26) & 0b111111).to!Código;
+        this.rf1    = ((palabraInstrucción >> 21) & 0b11111 );
+        this.rf2    = ((palabraInstrucción >> 16) & 0b11111 );
+        this.inm    = cast (short) palabraInstrucción;
+        assert (this.rf1 < 32 && this.rf2 < 32);
     }
 }
 

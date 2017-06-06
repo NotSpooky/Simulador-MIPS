@@ -303,20 +303,6 @@ struct Bloque (Tipo tipo) {
     }
 }
 
-/// Convierte un rango de 4 enteros de 8 bits en una palabra.
-palabra toPalabra (T)(T porConvertir) {
-    static assert (palabra.sizeof == 4 && byte.sizeof == 1);
-    assert (porConvertir.length == 4, `Se esperaba recibir un rango de 4 bytes.`);
-    import std.algorithm : all;
-    // Se permiten conversiones implícitas a bytes positivos hasta 255.
-    assert (porConvertir.all!`a < ubyte.max && a > byte.min`
-    /**/ , `Valor en archivo fuera de rango: ` ~ porConvertir.to!string);
-    // Se usa & 0xFF para evitar los 1s al inicio de los negativos.
-    return ((porConvertir [0] & 0xFF) << 24) | ((porConvertir [1] & 0xFF) << 16) 
-    /**/ | ((porConvertir [2] & 0xFF) << 8) | (porConvertir [3] & 0xFF);
-    
-}
-
 /// Convierte una palabra a 4 bytes. El opuesto de toPalabra.
 auto toBytes (palabra porConvertir) {
     return [
