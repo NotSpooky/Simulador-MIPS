@@ -56,6 +56,8 @@ class TUI {
     import memorias : memoriaPrincipalEnBytes;
     /// Actualiza los datos dentro del marco de la memoria.
     void actualizarMemoriaMostrada () {
+        lock.lock;
+        scope (exit) lock.unlock;
         auto memoria = memoriaPrincipalEnBytes;
         assert (byteInicialMostrado < memoria.length);
         auto porMostrar = memoria [byteInicialMostrado..$]; // Lo convierte a slice
