@@ -26,6 +26,7 @@ final class Núcleo {
 
     void ejecutar () {
         candadoContextos = new shared Mutex ();
+        import tui : interfazDeUsuario;
         import interpretador : ExcepciónDeFinDePrograma, Instrucción, Código, interpretar;
         while (true) {
             if (contadorQuantum == quantumEspecificadoPorUsuario) {
@@ -35,8 +36,9 @@ final class Núcleo {
                 this.registros = contextos [0];
                 contextos = contextos [1..$];
                 candadoContextos.unlock;
-                import tui : interfazDeUsuario;
-                interfazDeUsuario.mostrarCambioContexto ("Cambiando de contexto");
+                interfazDeUsuario.mostrarQuantum (`Cambiando de contexto`);
+            } else {
+                interfazDeUsuario.mostrarQuantum (`Contador de quantum: `, contadorQuantum);
             }
             contadorQuantum ++;
             esperarTick;

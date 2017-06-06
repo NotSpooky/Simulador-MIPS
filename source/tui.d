@@ -129,7 +129,7 @@ class TUI {
         escribirEn (líneaMensajeInstrucción + 1, mensaje);
     }
 
-    void mostrarCambioContexto (T...)(T mensaje) {
+    void mostrarQuantum (T...)(T mensaje) {
         lock.lock;
         scope (exit) lock.unlock ();
         escribirEn (líneaMensajeInstrucción + 2, mensaje);
