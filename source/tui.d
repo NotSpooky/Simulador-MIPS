@@ -33,6 +33,7 @@ class TUI {
     this () {
         lock = new shared Mutex ();
         terminal = Terminal (ConsoleOutputType.linear);
+        entrada  = RealTimeConsoleInput (&terminal, ConsoleInputFlags.raw);
         terminal.setTitle ("Simulador de MIPS");
         terminal.clear;
         // UFCS
@@ -150,34 +151,29 @@ class TUI {
         this.actualizarRegistrosMostrados;
         if (terminóEjecución || this.modoAvance == ModoAvance.manual) {
             while (true) {
-                import std.stdio : readln;
-                auto leido = readln;
-                bool seEscribió (char letra) {
-                    import std.regex;
-                    return !leido.matchFirst (`^` ~ letra ~ `\s*$`).empty;
-                }
-                if (seEscribió ('n')) {
+                auto leido = entrada.getch;
+                if (leido == 'n') {
                     // Solo avanza de instrucción.
                     break;
                 } else
-                if (seEscribió ('c')) {
+                if (leido == 'c') {
                     // Cambia el modo y continúa.
                     this.modoAvance = ModoAvance.continuo;
                     break;
                 } else
-                if (seEscribió ('w')) {
+                if (leido == 'w') {
                     // Muestra posiciones anteriores de memoria.
                     this.moverMemoriaArriba;
                 } else 
-                if (seEscribió ('s')) {
+                if (leido == 's') {
                     // Muestra posiciones más grandes de memoria.
                     this.moverMemoriaAbajo;
                 } else
-                if (seEscribió ('z') && this.posInicialRegistros > 13) {
+                if (leido == 'z' && this.posInicialRegistros > 13) {
                     this.posInicialRegistros -= 14;
                     this.actualizarRegistrosMostrados;
                 } else 
-                if (seEscribió ('x')) {
+                if (leido == 'x') {
                     this.posInicialRegistros += 14;
                     this.actualizarRegistrosMostrados;
                 }
@@ -292,6 +288,7 @@ class TUI {
         return truncPow2 (espacioParaBytes / 3 /*2 dígitos hexadecimales más ' '*/);
     }
     private Terminal terminal;
+    private RealTimeConsoleInput entrada;
 }
 
 private __gshared TUI interfazDeUsuario = null;

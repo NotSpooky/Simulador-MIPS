@@ -14,7 +14,7 @@ void main (string [] args)
     Reloj reloj = new Reloj ();
     interfazDeUsuario = new TUI ();
     auto tidNúcleo1 = spawn (&iniciarEjecución
-    /**/ , bloqueInicioInstrucciones * palabrasPorBloque, últimoNumNúcleo ++);
+    /**/ , bloqueInicioInstrucciones * palabrasPorBloque + 9, últimoNumNúcleo ++);
     auto tidNúcleo2 = spawn (&iniciarEjecución
     /**/ , bloqueInicioInstrucciones * palabrasPorBloque, últimoNumNúcleo ++);
     interfazDeUsuario.actualizarMemoriaMostrada;
