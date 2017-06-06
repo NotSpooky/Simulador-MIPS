@@ -37,34 +37,41 @@ final class Núcleo {
     void ejecutar () {
         candadoContextos = new shared Mutex ();
         import interpretador : ExcepciónDeFinDePrograma, Instrucción, Código, interpretar;
-        try {
-            while (true) {
-                if (contadorQuantum == quantumEspecificadoPorUsuario) {
-                    candadoContextos.lock;
-                    contextos ~= this.registros;
-                    contadorQuantum = 0;
+        while (true) {
+            if (contadorQuantum == quantumEspecificadoPorUsuario) {
+                candadoContextos.lock;
+                contextos ~= this.registros;
+                contadorQuantum = 0;
+                this.registros = contextos [0];
+                contextos = contextos [1..$];
+                candadoContextos.unlock;
+                import tui : interfazDeUsuario;
+                interfazDeUsuario.mostrarCambioContexto ("Cambiando de contexto");
+            }
+            contadorQuantum ++;
+            esperarTick;
+            auto instrucción = Instrucción (cachéInstrucciones [contadorDePrograma]);
+            try {
+                interpretar (this, instrucción);
+            } catch (ExcepciónDeFinDePrograma) {
+                candadoContextos.lock;
+                if (!contextos.length) {
+                    // Se acabó.
+                    import reloj : Respuesta;
+                    Respuesta (Respuesta.Tipo.terminóEjecución).enviar;
+                    candadoContextos.unlock;
+                    return;
+                } else {
+                    // Hay más hilillos, se trae uno.
                     this.registros = contextos [0];
                     contextos = contextos [1..$];
                     candadoContextos.unlock;
-                    import tui : interfazDeUsuario;
-                    interfazDeUsuario.mostrarCambioContexto ("Cambiando de contexto");
                 }
-                contadorQuantum ++;
-                esperarTick;
-                auto instrucción = Instrucción (cachéInstrucciones [contadorDePrograma]);
-                interpretar (this, instrucción);
-                contadorDePrograma ++;
-                // Envía mensaje informando que finalizó (un tock).
-                Respuesta (Respuesta.Tipo.tock).enviar;
-            } 
-        } catch (ExcepciónDeFinDePrograma) {
-            candadoContextos.lock;
-            static assert (0, `TO DO`);
-            candadoContextos.unlock;
-            import reloj : Respuesta;
-            Respuesta (Respuesta.Tipo.terminóEjecución).enviar;
-            return;
-        }
+            }
+            contadorDePrograma ++;
+            // Envía mensaje informando que finalizó (un tock).
+            Respuesta (Respuesta.Tipo.tock).enviar;
+        } 
     }
 }
 
