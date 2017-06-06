@@ -150,32 +150,37 @@ class TUI {
         this.actualizarMemoriaMostrada;
         this.actualizarRegistrosMostrados;
         if (terminóEjecución || this.modoAvance == ModoAvance.manual) {
-            while (true) {
+            ObtenerEntradas: while (true) {
                 auto leido = entrada.getch;
-                if (leido == 'n') {
-                    // Solo avanza de instrucción.
-                    break;
-                } else
-                if (leido == 'c') {
-                    // Cambia el modo y continúa.
-                    this.modoAvance = ModoAvance.continuo;
-                    break;
-                } else
-                if (leido == 'w') {
-                    // Muestra posiciones anteriores de memoria.
-                    this.moverMemoriaArriba;
-                } else 
-                if (leido == 's') {
-                    // Muestra posiciones más grandes de memoria.
-                    this.moverMemoriaAbajo;
-                } else
-                if (leido == 'z' && this.posInicialRegistros > 13) {
-                    this.posInicialRegistros -= 14;
-                    this.actualizarRegistrosMostrados;
-                } else 
-                if (leido == 'x') {
-                    this.posInicialRegistros += 14;
-                    this.actualizarRegistrosMostrados;
+                escribirEn (líneaSalidaEstándar, "");
+                switch (leido) {
+                    case 'n':
+                        // Solo avanza de instrucción.
+                        break ObtenerEntradas;
+                    case 'c':
+                        // Cambia el modo y continúa.
+                        this.modoAvance = ModoAvance.continuo;
+                        break ObtenerEntradas;
+                    case 'w':
+                        // Muestra posiciones anteriores de memoria.
+                        this.moverMemoriaArriba;
+                        break;
+                    case 's':
+                        // Muestra posiciones más grandes de memoria.
+                        this.moverMemoriaAbajo;
+                        break;
+                    case 'z':
+                        if (this.posInicialRegistros > 13) {
+                            this.posInicialRegistros -= 14;
+                            this.actualizarRegistrosMostrados;
+                        }
+                        break;
+                    case 'x':
+                        this.posInicialRegistros += 14;
+                        this.actualizarRegistrosMostrados;
+                        break;
+                    default:
+                        escribirEn (líneaSalidaEstándar, "No es comando: ", leido);
                 }
                 // Se limpia para que no se acumulen letras.
                 this.finEscritura;
