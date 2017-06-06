@@ -4,19 +4,16 @@ import std.stdio : writeln;
 
 void main (string [] args)
 {
-    import lectorarchivos : leerArchivo;
-    import memorias : rellenarMemoria, bloqueInicioInstrucciones
-    /**/ , memoriaPrincipal, palabrasPorBloque;
-    // TO DO: Preguntarle al usuario la ubicación del archivo.
-    auto programa = (args.length > 1 ? args [1] : `source/test.txt`).leerArchivo;
-    rellenarMemoria (programa);
+    import lectorarchivos :  preguntarPorHilillos;
+    auto posInicialesHilillos = preguntarPorHilillos;
+    assert (posInicialesHilillos.length >= 2, `Se necesitan al menos dos hilillos`);
     import reloj : Reloj, HiloDeNúcleoConIdentificador;
     Reloj reloj = new Reloj ();
     interfazDeUsuario = new TUI ();
     auto tidNúcleo1 = spawn (&iniciarEjecución
-    /**/ , bloqueInicioInstrucciones * palabrasPorBloque + 30, últimoNumNúcleo ++);
+    /**/ , posInicialesHilillos [0], últimoNumNúcleo ++);
     auto tidNúcleo2 = spawn (&iniciarEjecución
-    /**/ , bloqueInicioInstrucciones * palabrasPorBloque, últimoNumNúcleo ++);
+    /**/ , posInicialesHilillos [1], últimoNumNúcleo ++);
     interfazDeUsuario.actualizarMemoriaMostrada;
     import arsd.terminal : UserInterruptionException;
     try {

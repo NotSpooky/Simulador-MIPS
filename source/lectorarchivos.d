@@ -1,13 +1,39 @@
 module lectorarchivos;
 
-/// Retorna el archivo leído como un arreglo de palabras;
-import memorias      : palabra;
-import std.algorithm : map, all;
+import std.stdio     : File, writeln, readln;
+import std.algorithm : map, filter, fold, reduce;
+import std.regex     : splitter, regex;
 import std.conv      : to;
-palabra [] leerArchivo  (string nombreArchivo) {
-    import std.stdio : File;
-    import std.array : split, array;
+import memorias      : palabra, rellenarMemoria
+/**/ , bloqueInicioInstrucciones, palabrasPorBloque;
+auto preguntarPorHilillos () {
+    writeln (`Escriba los números correspondientes a los hilillos que se desea ejecutar separándolos por espacios:`);
+    writeln;
+    string [] archivosDirectorio = [];
+    import std.file;
+    uint i = 0;
+    foreach (string nombre; `hilos`.dirEntries (SpanMode.shallow).filter!(a => a.isFile)) {
+        archivosDirectorio ~= nombre;
+        writeln (i++, `: `, nombre);
+    }
 
+    uint [] posInicialesHilillos = [bloqueInicioInstrucciones * palabrasPorBloque];
+    import std.range : tee;
+    rellenarMemoria (
+        readln
+        [0..$-1]
+        .splitter (regex(`\s`))
+        .map!(to!uint)
+        .map! (indice => leerArchivo (archivosDirectorio [indice]))
+        .tee! (a => posInicialesHilillos ~= to!uint (a.length + posInicialesHilillos [$-1]))
+        .reduce!`a ~ b`
+    );
+    // El último no importa, solo las posiciones iniciales.
+    return posInicialesHilillos [0 .. $-1]; 
+}
+/// Retorna el archivo leído como un arreglo de palabras;
+palabra [] leerArchivo  (string nombreArchivo) {
+    import std.array : split, array;
     auto archivo = File (nombreArchivo);
     return
         archivo
