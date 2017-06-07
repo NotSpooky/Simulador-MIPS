@@ -2,7 +2,7 @@ module lectorarchivos;
 
 import std.stdio     : File, writeln, readln;
 import std.algorithm : map, filter, fold, reduce;
-import std.regex     : splitter, regex;
+import std.regex     : splitter, regex, matchFirst;
 import std.conv      : to;
 import memorias      : palabra, rellenarMemoria
 /**/ , bloqueInicioInstrucciones, palabrasPorBloque;
@@ -18,10 +18,14 @@ auto preguntarPorHilillos () {
     }
 
     uint [] posInicialesHilillos = [bloqueInicioInstrucciones * palabrasPorBloque];
+    string valLeido = ""; 
+    do {
+        valLeido = readln [0..$-1];
+    } while (valLeido.matchFirst (`^\d+(\s\d+)*$`).empty);
+
     import std.range : tee;
     rellenarMemoria (
-        readln
-        [0..$-1]
+        valLeido
         .splitter (regex(`\s`))
         .map!(to!uint)
         .map! (indice => leerArchivo (archivosDirectorio [indice]))

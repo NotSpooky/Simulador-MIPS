@@ -84,7 +84,7 @@ class CachéL1 (TipoCaché tipoCaché) {
             /// No está en la otra L1, se suelta esa caché y se busca en L2.
             liberarAlFinal (candadoDeLaOtraL1);
             foreach (i; 0..ciclosBloqueL2L1) {
-                interfazDeUsuario.mostrar (`Trayendo bloque `, numBloqueMem, ` de L2: `, i + 1, '/', ciclosBloqueL2L1);
+                interfazDeUsuario.mostrar (`Trayendo bloque de datos: `, numBloqueMem, ` de L2: `, i + 1, '/', ciclosBloqueL2L1);
                 relojazo;
             }
             (*bloqueBuscado) = cachéL2 [numBloqueMem];
@@ -234,7 +234,7 @@ class CachéL2 {
         /**/ && bloques [posBloque].bloqueEnMemoria == númeroBloqueEnMemoria) ) {
             // No se tiene, hay que traer de memoria.
             foreach (i; 0..ciclosBloqueMemL2) {
-                interfazDeUsuario.mostrar (`Trayendo bloque `, númeroBloqueEnMemoria, ` de Mem: `, i+1, '/',ciclosBloqueMemL2);
+                interfazDeUsuario.mostrar (`Trayendo bloque de datos: `, númeroBloqueEnMemoria, ` de Mem: `, i+1, '/',ciclosBloqueMemL2);
                 relojazo;
             }
             this.bloques [posBloque] =
