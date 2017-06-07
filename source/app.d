@@ -1,19 +1,20 @@
 import std.concurrency : spawn, thisTid, OwnerTerminated;
 import tui : TUI, interfazDeUsuario;
 import std.stdio : writeln;
+import nucleo : Núcleo, contextos,  Registros;
 
 void main (string [] args)
 {
     import lectorarchivos :  preguntarPorHilillos;
     auto posInicialesHilillos = preguntarPorHilillos;
-    assert (posInicialesHilillos.length >= 2, `Se necesitan al menos dos hilillos`);
+    foreach (posInicial; posInicialesHilillos) {
+        contextos ~= Registros (posInicial);
+    }
     import reloj : Reloj, HiloDeNúcleoConIdentificador;
     Reloj reloj = new Reloj ();
     interfazDeUsuario = new TUI ();
-    auto tidNúcleo1 = spawn (&iniciarEjecución
-    /**/ , posInicialesHilillos [0], últimoNumNúcleo ++);
-    auto tidNúcleo2 = spawn (&iniciarEjecución
-    /**/ , posInicialesHilillos [1], últimoNumNúcleo ++);
+    auto tidNúcleo1 = spawn (&iniciarEjecución, últimoNumNúcleo ++);
+    auto tidNúcleo2 = spawn (&iniciarEjecución, últimoNumNúcleo ++);
     interfazDeUsuario.actualizarMemoriaMostrada;
     import arsd.terminal : UserInterruptionException;
     try {
@@ -31,10 +32,9 @@ void main (string [] args)
 }
 
 /// Comienza a ejecutar en un nuevo núcleo con el contador en contadorPrograma.
-void iniciarEjecución (uint contadorPrograma, uint numNúcleo) {
+void iniciarEjecución (uint numNúcleo) {
     try {
-        import nucleo;
-        Núcleo núcleo = new Núcleo (contadorPrograma, numNúcleo);
+        Núcleo núcleo = new Núcleo (numNúcleo);
         núcleo.ejecutar;
     } catch (OwnerTerminated) {
         writeln (`Terminando hilo `, numNúcleo, `, hilo principal terminó.`);

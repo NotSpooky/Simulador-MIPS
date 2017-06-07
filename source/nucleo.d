@@ -9,10 +9,9 @@ enum quantumEspecificadoPorUsuario = 7;
 alias palabra = uint;
 enum cantidadNúcleos = 2;
 final class Núcleo {
-    this (uint contadorDePrograma, uint númeroNúcleo /*Identificador*/) {
+    this (uint númeroNúcleo /*Identificador*/) {
         assert (númeroNúcleo >= 0 && númeroNúcleo < cantidadNúcleos);
         this.númeroNúcleo  = númeroNúcleo;
-        this.registros.contadorDePrograma = contadorDePrograma;
         cachéInstrucciones = new CachéL1Instrucciones ();
         enviarMensajeDeInicio;
     }
@@ -28,6 +27,15 @@ final class Núcleo {
         candadoContextos = new shared Mutex ();
         import tui : interfazDeUsuario;
         import interpretador : ExcepciónDeFinDePrograma, Instrucción, Código, interpretar;
+        candadoContextos.lock;
+        if (!contextos.length) {
+            // Nada que hacer.
+            Respuesta (Respuesta.Tipo.terminóEjecución).enviar;
+        } else {
+            this.registros = contextos [0];
+            contextos = contextos [1..$];
+        }
+        candadoContextos.unlock;
         while (true) {
             if (contadorQuantum == quantumEspecificadoPorUsuario) {
                 candadoContextos.lock;
@@ -69,9 +77,12 @@ final class Núcleo {
 
 struct Registros {
     palabra [32] registros = 0;
-    palabra      rl;
+    palabra      rl        = -1;
     /// Tiene el número de instrucción, no de bloque ni de byte.
-    uint contadorDePrograma; 
+    uint contadorDePrograma = -1; 
+    this (uint contadorDePrograma) {
+        this.contadorDePrograma = contadorDePrograma;
+    }
     /// Escribir a la posición 0 no es válido.
     void opIndexAssign (palabra nuevoVal, uint posición) {
         assert (posición >= 1 && posición < 32, `Registro fuera de rango: `
@@ -91,8 +102,9 @@ struct Registros {
 
     invariant {
         assert (
-        /**/ contadorDePrograma >= bloqueInicioInstrucciones * palabrasPorBloque
-        /**/ && contadorDePrograma <= bloqueFinInstrucciones * palabrasPorBloque,
+        /**/ (contadorDePrograma >= bloqueInicioInstrucciones * palabrasPorBloque
+        /**/ && contadorDePrograma <= bloqueFinInstrucciones * palabrasPorBloque)
+        /**/ || (contadorDePrograma == -1),
         /**/ `ContadorDePrograma fuera de rango permitido: ` 
         /**/ ~ contadorDePrograma.to!string);
     }
