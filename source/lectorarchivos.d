@@ -1,7 +1,7 @@
 module lectorarchivos;
 
 import std.stdio     : File, writeln, readln;
-import std.algorithm : map, filter, fold, reduce;
+import std.algorithm : map, filter, fold, reduce, sort;
 import std.regex     : splitter, regex, matchFirst;
 import std.conv      : to;
 import memorias      : palabra, rellenarMemoria
@@ -9,12 +9,18 @@ import memorias      : palabra, rellenarMemoria
 auto preguntarPorHilillos () {
     writeln (`Escriba los números correspondientes a los hilillos que se desea ejecutar separándolos por espacios:`);
     writeln;
-    string [] archivosDirectorio = [];
     import std.file;
-    uint i = 0;
-    foreach (string nombre; `hilos`.dirEntries (SpanMode.shallow).filter!(a => a.isFile)) {
-        archivosDirectorio ~= nombre;
-        writeln (i++, `: `, nombre);
+    import std.range : tee, array;
+    auto archivosDirectorio = 
+        `hilos`
+        .dirEntries (SpanMode.shallow)
+        .filter!(a => a.isFile)
+        .map!(to!string)
+        .array
+        .sort!`a<b`
+        .array;
+    foreach (i, archivo; archivosDirectorio) {
+        writeln (i, `: `, archivo);
     }
 
     uint [] posInicialesHilillos = [bloqueInicioInstrucciones * palabrasPorBloque];
@@ -23,7 +29,6 @@ auto preguntarPorHilillos () {
         valLeido = readln [0..$-1];
     } while (valLeido.matchFirst (`^\d+(\s\d+)*$`).empty);
 
-    import std.range : tee;
     rellenarMemoria (
         valLeido
         .splitter (regex(`\s`))
