@@ -21,7 +21,7 @@ shared static Bloque!(Tipo.memoria) [64] memoriaPrincipal;
 /// Se ejecuta al inicio para llenar la memoria con enteros.
 /// Sirve para colocar más fácilmente los datos leídos de un archivo.
 static void rellenarMemoria (palabra [] valoresRaw) {
-    auto maxPos = valoresRaw.length + bloqueInicioInstrucciones;
+    auto maxPos = (valoresRaw.length /palabrasPorBloque) + bloqueInicioInstrucciones;
     assert (maxPos <= bloqueFinInstrucciones, `Instrucciones fuera de límite: ` ~ maxPos.to!string);
     foreach (uint offsetDeBloque, valorRaw; valoresRaw) {
         auto numBloque = bloqueInicioInstrucciones + (offsetDeBloque / palabrasPorBloque);
