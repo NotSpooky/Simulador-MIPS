@@ -8,9 +8,15 @@ void main (string [] args)
     import lectorarchivos :  preguntarPorHilillos;
     preguntarPorHilillos;
 
-    `Ingrese la cantidad de instrucciones ejecutadas para cambiar contexto`.writeln;
-    import std.conv : to;
-    quantumEspecificadoPorUsuario = readln [0.. $-1].to!uint;
+    bool datoCorrecto = false;
+    while (!datoCorrecto) {
+        try {
+            `Ingrese la cantidad de instrucciones ejecutadas para cambiar contexto`.writeln;
+            import std.conv : to;
+            quantumEspecificadoPorUsuario = readln [0.. $-1].to!uint;
+            datoCorrecto = true;
+        } catch (Exception e) {}
+    }
     import reloj : Reloj, HiloDeNúcleoConIdentificador;
     Reloj reloj = new Reloj ();
     interfazDeUsuario = new TUI ();

@@ -187,8 +187,8 @@ class CachéL1 (TipoCaché tipoCaché) {
     private void conseguirCandados (Candado [] candados) {
         assert (candados.length, `No se recibieron candados.`);
         while (!m_candados [candados [$-1]].tryLock || estampillasCandados [candados[$-1]] == cicloActual) {
-            volverAIntentar:
             interfazDeUsuario.mostrar (`Falló en obtener candado`);
+            volverAIntentar:
             // No se consiguió, hay que esperarse al siguiente ciclo.
             if (candados.length == 1) {
                 relojazo;
@@ -205,6 +205,7 @@ class CachéL1 (TipoCaché tipoCaché) {
         // en cuyo caso se suelta.
         if (estampillasCandados [candados [$-1]] == cicloActual) {
             m_candados [candados [$-1]].unlock;
+            interfazDeUsuario.mostrar (`Falló en obtener candado liberado este ciclo`);
             goto volverAIntentar;
         }
     }

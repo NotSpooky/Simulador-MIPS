@@ -31,10 +31,12 @@ final class Núcleo {
         if (!contextos.length) {
             // Nada que hacer.
             Respuesta (Respuesta.Tipo.terminóEjecución).enviar;
-        } else {
-            this.registros = contextos [0];
-            contextos = contextos [1..$];
+            interfazDeUsuario.mostrar (`Puede dormir, nada que hacer`);
+            candadoContextos.unlock;
+            return;
         }
+        this.registros = contextos [0];
+        contextos = contextos [1..$];
         candadoContextos.unlock;
         while (true) {
             if (contadorQuantum >= quantumEspecificadoPorUsuario) {
