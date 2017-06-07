@@ -1,15 +1,16 @@
 import std.concurrency : spawn, thisTid, OwnerTerminated;
-import tui : TUI, interfazDeUsuario;
-import std.stdio : writeln;
-import nucleo : Núcleo, contextos,  Registros;
+import tui             : TUI, interfazDeUsuario;
+import std.stdio       : writeln, readln;
+import nucleo          : Núcleo, quantumEspecificadoPorUsuario;
 
 void main (string [] args)
 {
     import lectorarchivos :  preguntarPorHilillos;
-    auto posInicialesHilillos = preguntarPorHilillos;
-    foreach (posInicial; posInicialesHilillos) {
-        contextos ~= Registros (posInicial);
-    }
+    preguntarPorHilillos;
+
+    `Ingrese la cantidad de instrucciones ejecutadas para cambiar contexto`.writeln;
+    import std.conv : to;
+    quantumEspecificadoPorUsuario = readln [0.. $-1].to!uint;
     import reloj : Reloj, HiloDeNúcleoConIdentificador;
     Reloj reloj = new Reloj ();
     interfazDeUsuario = new TUI ();

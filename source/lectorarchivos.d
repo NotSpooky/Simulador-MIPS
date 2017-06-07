@@ -28,8 +28,12 @@ auto preguntarPorHilillos () {
         .tee! (a => posInicialesHilillos ~= to!uint (a.length + posInicialesHilillos [$-1]))
         .reduce!`a ~ b`
     );
+    assert (posInicialesHilillos.length > 1);
+    import nucleo : Registros, contextos;
     // El último no importa, solo las posiciones iniciales.
-    return posInicialesHilillos [0 .. $-1]; 
+    foreach (posInicial; posInicialesHilillos [0..$-1]) {
+        contextos ~= Registros (posInicial);
+    }
 }
 /// Retorna el archivo leído como un arreglo de palabras;
 palabra [] leerArchivo  (string nombreArchivo) {

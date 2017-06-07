@@ -4,7 +4,7 @@ import std.conv : to;
 import reloj : esperarTick, Respuesta, enviarMensajeDeInicio;
 import memorias : CachéL1Instrucciones, bloqueFinInstrucciones, bloqueInicioInstrucciones, palabrasPorBloque;
 
-enum quantumEspecificadoPorUsuario = 7;
+static shared quantumEspecificadoPorUsuario = 1;
 
 alias palabra = uint;
 enum cantidadNúcleos = 2;
@@ -37,7 +37,7 @@ final class Núcleo {
         }
         candadoContextos.unlock;
         while (true) {
-            if (contadorQuantum == quantumEspecificadoPorUsuario) {
+            if (contadorQuantum >= quantumEspecificadoPorUsuario) {
                 candadoContextos.lock;
                 contextos ~= this.registros;
                 contadorQuantum = 0;
@@ -48,6 +48,7 @@ final class Núcleo {
             } else {
                 interfazDeUsuario.mostrarQuantum (`Contador de quantum: `, contadorQuantum);
             }
+            import core.atomic;
             contadorQuantum ++;
             esperarTick;
             auto instrucción = Instrucción (cachéInstrucciones [registros.contadorDePrograma]);
