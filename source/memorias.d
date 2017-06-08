@@ -198,7 +198,9 @@ class CachéL1 (TipoCaché tipoCaché) {
                     m_candados [candado].unlock;
                 }
                 relojazo;
-                conseguirCandados (candados [0..$-1]);
+                foreach (i; 1..candados.length) {
+                    conseguirCandados (candados [0..i]);
+                }
             }
         }
         // Consiguió el candado pero puede que se haya liberado este mismo ciclo,

@@ -36,6 +36,7 @@ void main (string [] args)
         // Solo se termina el programa, el usuario lo detuvo.
         writeln (`Interrumpido por el usuario.`);
     }
+    // Se muestran los datos finales de los hilillos y cachés.
     foreach (hilillosFinalizado; hilillosFinalizados) {
         hilillosFinalizado.writeln;
     }
