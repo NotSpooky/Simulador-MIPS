@@ -70,19 +70,19 @@ final class Núcleo {
                         , `Registros: `, this.registros, '\n'
                         , "\nCaché L1 de datos al final de ejecución: \n"
                         , bloques );
-                }
-                candadoContextos.lock;
-                if (!contextos.length) {
-                    // Se acabó.
-                    import reloj : Respuesta;
-                    Respuesta (Respuesta.Tipo.terminóEjecución).enviar;
-                    candadoContextos.unlock;
-                    return;
-                } else {
-                    // Hay más hilillos, se trae uno.
-                    this.registros = contextos [0];
-                    contextos = contextos [1..$];
-                    candadoContextos.unlock;
+                    candadoContextos.lock;
+                    if (!contextos.length) {
+                        // Se acabó.
+                        import reloj : Respuesta;
+                        Respuesta (Respuesta.Tipo.terminóEjecución).enviar;
+                        candadoContextos.unlock;
+                        return;
+                    } else {
+                        // Hay más hilillos, se trae uno.
+                        this.registros = contextos [0];
+                        contextos = contextos [1..$];
+                        candadoContextos.unlock;
+                    }
                 }
             }
             registros.contadorDePrograma ++;
