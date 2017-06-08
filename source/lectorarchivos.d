@@ -1,15 +1,25 @@
 module lectorarchivos;
 
 import std.stdio     : File, writeln, readln;
-import std.algorithm : map, filter, fold, reduce, sort;
+import std.algorithm : map, filter, fold, reduce, sort, each;
 import std.regex     : splitter, regex, matchFirst;
 import std.conv      : to;
 import memorias      : palabra, rellenarMemoria
 /**/ , bloqueInicioInstrucciones, palabrasPorBloque;
 auto preguntarPorHilillos () {
     import std.file;
+    import std.path;
     import std.range : tee, array;
     uint numDir = 1;
+    auto archivosActualesOrdenados () {
+        return getcwd
+        .dirEntries (SpanMode.shallow)
+        .filter!(a => a.isFile)
+        .map!(a => a.name)
+        .array
+        .sort!`a<b`
+        .array;
+    }
     chdir (`hilos`);
     while (numDir != 0) {
         string directorioActual = getcwd;
@@ -23,7 +33,11 @@ auto preguntarPorHilillos () {
         writeln (`0: Usar este directorio`);
         writeln (`1: ..`);
         foreach (i, directorio; directorios) {
-            writeln (i + 2, `: `, directorio);
+            writeln (i + 2, `: `, baseName (directorio));
+        }
+        writeln (`Archivos:`);
+        foreach (archivo; archivosActualesOrdenados) {
+            writeln (baseName (archivo));
         }
         try {
             numDir = readln [0..$-1].to!uint;
@@ -44,16 +58,9 @@ auto preguntarPorHilillos () {
     }
     writeln (`Escriba los números correspondientes a los hilillos que se desea ejecutar separándolos por espacios:`);
     writeln;
-    auto archivosDirectorio = 
-        getcwd
-        .dirEntries (SpanMode.shallow)
-        .filter!(a => a.isFile)
-        .map!(a => a.name)
-        .array
-        .sort!`a<b`
-        .array;
+    auto archivosDirectorio = archivosActualesOrdenados;
     foreach (i, archivo; archivosDirectorio) {
-        writeln (i, `: `, archivo);
+        writeln (i, `: `, baseName(archivo));
     }
 
     uint [] posInicialesHilillos = [bloqueInicioInstrucciones * palabrasPorBloque];
