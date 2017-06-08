@@ -252,7 +252,7 @@ class CachéL2 {
         }
         
     }
-    private Bloque!(Tipo.caché) [ bloquesEnL2 ] bloques;
+    Bloque!(Tipo.caché) [ bloquesEnL2 ] bloques;
 }
 
 private __gshared CachéL2 cachéL2;

@@ -39,6 +39,12 @@ void main (string [] args)
     foreach (hilillosFinalizado; hilillosFinalizados) {
         hilillosFinalizado.writeln;
     }
+    writeln ("\n Caché L2:\n");
+    import memorias : cachéL2;
+    foreach (i, bloqueL2; cachéL2.bloques) {
+        writeln ("Bloque ", i, ":\n", bloqueL2);
+    }
+
 }
 
 /// Comienza a ejecutar en un nuevo núcleo con el contador en contadorPrograma.
