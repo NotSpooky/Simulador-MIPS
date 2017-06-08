@@ -184,10 +184,10 @@ class CachéL1 (TipoCaché tipoCaché) {
     /// Recibe un arreglo de candados, donde el último es el que todavía no se
     /// ha conseguido y el resto son los que hay que tener (en orden)
     /// para poder intentar conseguir el último.
-    private void conseguirCandados (Candado [] candados) {
+    private void conseguirCandados (Candado [] candados, int numLínea = __LINE__) {
         assert (candados.length, `No se recibieron candados.`);
         while (!m_candados [candados [$-1]].tryLock || estampillasCandados [candados[$-1]] == cicloActual) {
-            interfazDeUsuario.mostrar (`Falló en obtener candado`);
+            interfazDeUsuario.mostrar (`Falló en obtener candado (L` ~ numLínea.to!string ~ `)`);
             volverAIntentar:
             // No se consiguió, hay que esperarse al siguiente ciclo.
             if (candados.length == 1) {
