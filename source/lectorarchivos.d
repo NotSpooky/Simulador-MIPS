@@ -40,7 +40,14 @@ auto preguntarPorHilillos () {
             writeln (baseName (archivo));
         }
         try {
-            numDir = readln [0..$-1].to!uint;
+            auto leido = readln;
+            if (leido.length <= 1) {
+                numDir = 0;
+            } else if (leido [0..$-1] == "..") {
+                numDir = 1;
+            } else {
+                numDir = leido [0..$-1].to!uint;
+            }
         } catch (Exception e) {
             writeln (`Favor ingresar solo un entero positivo`);
             continue;
