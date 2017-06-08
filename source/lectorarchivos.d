@@ -7,15 +7,48 @@ import std.conv      : to;
 import memorias      : palabra, rellenarMemoria
 /**/ , bloqueInicioInstrucciones, palabrasPorBloque;
 auto preguntarPorHilillos () {
-    writeln (`Escriba los números correspondientes a los hilillos que se desea ejecutar separándolos por espacios:`);
-    writeln;
     import std.file;
     import std.range : tee, array;
+    uint numDir = 1;
+    chdir (`hilos`);
+    while (numDir != 0) {
+        string directorioActual = getcwd;
+        writeln (`Escriba el número de directorio al cual moverse`);
+        writeln (`Directorio actual: `, directorioActual);
+        auto directorios = 
+            directorioActual
+            .dirEntries (SpanMode.shallow)
+            .filter!(a => a.isDir)
+            .array;
+        writeln (`0: Usar este directorio`);
+        writeln (`1: ..`);
+        foreach (i, directorio; directorios) {
+            writeln (i + 2, `: `, directorio);
+        }
+        try {
+            numDir = readln [0..$-1].to!uint;
+        } catch (Exception e) {
+            writeln (`Favor ingresar solo un entero positivo`);
+            continue;
+        }
+        if (numDir == 1) {
+            // Se usa el padre.
+            chdir (`..`);
+        } else if (numDir > 0){
+            if (numDir >= (directorios.length + 2)) {
+                writeln (`Número fuera de rango`);
+                continue;
+            }
+            chdir (directorios [numDir - 2]);
+        }
+    }
+    writeln (`Escriba los números correspondientes a los hilillos que se desea ejecutar separándolos por espacios:`);
+    writeln;
     auto archivosDirectorio = 
-        `hilos`
+        getcwd
         .dirEntries (SpanMode.shallow)
         .filter!(a => a.isFile)
-        .map!(to!string)
+        .map!(a => a.name)
         .array
         .sort!`a<b`
         .array;
