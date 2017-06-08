@@ -121,6 +121,7 @@ class CachéL1 (TipoCaché tipoCaché) {
             auto bloqueBuscado = &this.bloques [numBloqueL1];
             if (bloqueBuscado.válido && bloqueBuscado.bloqueEnMemoria == numBloqueMem) {
                 (*bloqueBuscado)[numPalabra] = porColocar;
+                return;
             }
 
             // No se encontró.
