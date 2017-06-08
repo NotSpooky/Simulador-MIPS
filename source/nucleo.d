@@ -57,6 +57,14 @@ final class Núcleo {
             try {
                 interpretar (this, instrucción);
             } catch (ExcepciónDeFinDePrograma) {
+                // Se terminó de ejecutar, se agrega la información de L1,
+                // registros y cantidad de ciclos ejecutados.
+                synchronized {
+                    hilillosFinalizados ~=
+                        `Hilillo ` ~ this.registros.programaFuente ~ ":\n" 
+                        ~ `Ciclos ejecutados: ` ~ this.registros.contadorCiclos.to!string ~ '\n'
+                        ~ `Registros: ` ~ this.registros.to!string;
+                }
                 candadoContextos.lock;
                 if (!contextos.length) {
                     // Se acabó.
@@ -78,13 +86,20 @@ final class Núcleo {
     }
 }
 
+/// Contiene un contexto. Los registros normales se accesan con el operador de
+/// [], el rl y contadorDePrograma con notación de punto (ejemplo regs.rl).
 struct Registros {
-    palabra [32] registros = 0;
+    palabra [32] registros =  0;
     palabra      rl        = -1;
     /// Tiene el número de instrucción, no de bloque ni de byte.
     uint contadorDePrograma = -1; 
-    this (uint contadorDePrograma) {
+    /// Lleva cuántos ciclos lleva ejecutándose.
+    uint contadorCiclos     =  0;
+    /// Identificador.
+    string programaFuente   = "";
+    this (uint contadorDePrograma, string programaFuente) {
         this.contadorDePrograma = contadorDePrograma;
+        this.programaFuente     = programaFuente;
     }
     /// Escribir a la posición 0 no es válido.
     void opIndexAssign (palabra nuevoVal, uint posición) {
@@ -116,3 +131,5 @@ struct Registros {
 __gshared Registros [] contextos = [];
 import core.thread : Mutex;
 shared Mutex candadoContextos;
+
+shared string [] hilillosFinalizados = [];

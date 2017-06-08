@@ -13,6 +13,8 @@ struct Respuesta {
     this (Tipo tipo) {
         this.tipo         = tipo;
         this.númeroNúcleo = Núcleo.númeroNúcleo;
+        // Se aumenta el contador del hilillo.
+        Núcleo.registros.contadorCiclos ++;
         this.registros    = Núcleo.registros;
     }
     Tipo tipo;
@@ -115,3 +117,4 @@ struct HiloDeNúcleoConIdentificador {
 }
 
 private __gshared Tid tidReloj; /// Thread ID del hilo del reloj.
+
