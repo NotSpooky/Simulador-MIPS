@@ -1,6 +1,6 @@
 module memorias;
 
-import std.conv        : to;
+import std.conv        : to, text;
 import reloj           : relojazo, cicloActual;
 import nucleo          : Núcleo, cantidadNúcleos;
 import core.sync.mutex : Mutex;
@@ -305,6 +305,12 @@ struct Bloque (Tipo tipo) {
             assert (numPalabra < palabras.length);
             this.modificado = true;
             palabras [numPalabra] = porColocar;
+        }
+
+        void toString (scope void delegate (const (char) []) sacar) const {
+            sacar ( text (`Bloque en memoria: `, bloqueEnMemoria, ":\n"
+                , `Válido: `, válido, `, Modificado: `, modificado, '\n'
+                , "Datos: ", this.palabras, '\n') );
         }
     }
 }

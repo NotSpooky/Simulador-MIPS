@@ -1,8 +1,8 @@
 module nucleo;
 
-import std.conv : to;
+import std.conv : text, to;
 import reloj : esperarTick, Respuesta, enviarMensajeDeInicio;
-import memorias : CachéL1Instrucciones, bloqueFinInstrucciones, bloqueInicioInstrucciones, palabrasPorBloque;
+import memorias : CachéL1Instrucciones, bloqueFinInstrucciones, bloqueInicioInstrucciones, palabrasPorBloque, cachéL1Datos;
 
 static shared quantumEspecificadoPorUsuario = 1;
 
@@ -60,10 +60,16 @@ final class Núcleo {
                 // Se terminó de ejecutar, se agrega la información de L1,
                 // registros y cantidad de ciclos ejecutados.
                 synchronized {
-                    hilillosFinalizados ~=
-                        `Hilillo ` ~ this.registros.programaFuente ~ ":\n" 
-                        ~ `Ciclos ejecutados: ` ~ this.registros.contadorCiclos.to!string ~ '\n'
-                        ~ `Registros: ` ~ this.registros.to!string;
+                    string bloques = "";
+                    foreach (i, bloque; cachéL1Datos.bloques) {
+                        bloques ~= text ("\nBloque ", i, ":\n", bloque);
+                    }
+                    hilillosFinalizados ~= text (
+                        `Hilillo `, this.registros.programaFuente, ":\n" 
+                        , `Ciclos ejecutados: `, this.registros.contadorCiclos, '\n'
+                        , `Registros: `, this.registros, '\n'
+                        , "\nCaché L1 de datos al final de ejecución: \n"
+                        , bloques );
                 }
                 candadoContextos.lock;
                 if (!contextos.length) {
