@@ -186,7 +186,7 @@ class CachéL1 (TipoCaché tipoCaché) {
     /// para poder intentar conseguir el último.
     private void conseguirCandados (Candado [] candados, int numLínea = __LINE__) {
         assert (candados.length, `No se recibieron candados.`);
-        while (!m_candados [candados [$-1]].tryLock || estampillasCandados [candados[$-1]] == cicloActual) {
+        while (!m_candados [candados [$-1]].tryLock) {
             interfazDeUsuario.mostrar (`Falló en obtener candado (L` ~ numLínea.to!string ~ `)`);
             volverAIntentar:
             // No se consiguió, hay que esperarse al siguiente ciclo.
