@@ -76,10 +76,12 @@ auto preguntarPorHilillos () {
         valLeido = readln [0..$-1];
     } while (valLeido.matchFirst (`^\d+(\s\d+)*$`).empty);
 
+    string [] archivosSel = [];
     rellenarMemoria (
         valLeido
         .splitter (regex(`\s`))
         .map!(to!uint)
+        .tee! (indice => archivosSel ~= archivosDirectorio [indice])
         .map! (indice => leerArchivo (archivosDirectorio [indice]))
         .tee! (a => posInicialesHilillos ~= to!uint (a.length + posInicialesHilillos [$-1]))
         .reduce!`a ~ b`
@@ -88,7 +90,7 @@ auto preguntarPorHilillos () {
     import nucleo : Registros, contextos;
     // El último no importa, solo las posiciones iniciales.
     foreach (i, posInicial; posInicialesHilillos [0..$-1]) {
-        contextos ~= Registros (posInicial, archivosDirectorio [i]);
+        contextos ~= Registros (posInicial, archivosSel [i]);
     }
 }
 /// Retorna el archivo leído como un arreglo de palabras;

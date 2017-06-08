@@ -73,7 +73,7 @@ class TUI {
                     // No hay más que mostrar.
                     terminal.write (`-- `);
                 } else {
-                    terminal.writef (`%02X `, porMostrar.front);
+                    terminal.writef (`%04d `, porMostrar.front);
                     porMostrar.popFront;
                 }
             }
@@ -257,8 +257,8 @@ class TUI {
         import std.range : repeat;
         terminal.moveTo (ubicaciónDeMemoria [0], ubicaciónDeMemoria [1]);
         // Marco de arriba.
-        terminal.write ('┌', repeat ('─', bytesPorLinea * 3), '┐');
-        uint posDerechaMarco = ubicaciónDeMemoria [0] + bytesPorLinea * 3 + 1 /*Marco iz*/;
+        terminal.write ('┌', repeat ('─', bytesPorLinea * 5), '┐');
+        uint posDerechaMarco = ubicaciónDeMemoria [0] + bytesPorLinea * 5 + 1 /*Marco iz*/;
         foreach (i; 0 .. cantidadLineasMemoria) {
             // Marcos de la izquierda y derecha.
             auto columna = ubicaciónDeMemoria [1] + i + 1;
@@ -266,7 +266,7 @@ class TUI {
             // El 1 es de marco de arriba.
             terminal.moveTo (ubicaciónDeMemoria [0] - 4, columna);
             terminal.color (Color.blue, Color.DEFAULT);
-            terminal.writef (`%03X `, ((i + this.filaInicialDeMemoria) * bytesPorLinea));
+            terminal.writef (`%03d `, ((i + this.filaInicialDeMemoria) * bytesPorLinea));
             terminal.color (Color.DEFAULT, Color.DEFAULT);
             terminal.write ('│');
             terminal.moveTo (posDerechaMarco, columna);
@@ -275,7 +275,7 @@ class TUI {
         // Marco de abajo.
         terminal.moveTo (ubicaciónDeMemoria [0]
         /**/ , ubicaciónDeMemoria [1] + cantidadLineasMemoria + 1);
-        terminal.write ('└', repeat ('─', bytesPorLinea * 3), '┘');
+        terminal.write ('└', repeat ('─', bytesPorLinea * 5), '┘');
     }
     private void mostrarInstruccionesUsuario () {
         static assert (cantidadFilasInstrucciones == 3);
@@ -291,7 +291,7 @@ class TUI {
     /// de la tabla de memoria.
     private auto bytesPorLinea () {
         import std.math : truncPow2;
-        return truncPow2 (espacioParaBytes / 3 /*2 dígitos hexadecimales más ' '*/);
+        return truncPow2 (espacioParaBytes / 5 /*2 dígitos hexadecimales más ' '*/);
     }
     private Terminal terminal;
     private RealTimeConsoleInput entrada;

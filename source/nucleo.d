@@ -96,7 +96,7 @@ final class Núcleo {
 /// [], el rl y contadorDePrograma con notación de punto (ejemplo regs.rl).
 struct Registros {
     palabra [32] registros =  0;
-    palabra      rl        = -1;
+    int          rl        = -1;
     /// Tiene el número de instrucción, no de bloque ni de byte.
     uint contadorDePrograma = -1; 
     /// Lleva cuántos ciclos lleva ejecutándose.
@@ -116,11 +116,12 @@ struct Registros {
     /// Para imprimirlo en pantalla.
     void toString (scope void delegate (const (char) []) sacar) const {
         import std.format;
-        sacar ( format (`PC: %02X `, this.contadorDePrograma) );
+        if (this.contadorDePrograma != -1)
+            sacar ( format (`PC: %d `, this.contadorDePrograma) );
         foreach (i, registro; registros) {
-            sacar ( format (`R%02d: %08X `, i, registro) );
+            sacar ( format (`R%d: %d `, i, registro) );
         }
-        sacar ( format (`RL: %08X`, this.rl) );
+        sacar ( format (`RL: %d `, this.rl) );
     }
     alias registros this;
 
