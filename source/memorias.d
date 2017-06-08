@@ -72,6 +72,7 @@ class CachéL1 (TipoCaché tipoCaché) {
             if (bloqueOtraL1.modificado && bloqueOtraL1.bloqueEnMemoria == numBloqueMem) {
                 // El otro lo tiene
                 assert (bloqueOtraL1.válido);
+                bloqueBuscado.bloqueEnMemoria = bloqueOtraL1.bloqueEnMemoria;
                 bloqueBuscado.palabras   = bloqueOtraL1.palabras;
                 bloqueBuscado.válido     = true;
                 bloqueBuscado.modificado = false;
@@ -140,6 +141,7 @@ class CachéL1 (TipoCaché tipoCaché) {
             if (bloqueOtraL1.modificado && bloqueOtraL1.bloqueEnMemoria == numBloqueMem) {
                 // El otro lo tiene
                 assert (bloqueOtraL1.válido, `Otra L1 no es válido.`);
+                bloqueBuscado.bloqueEnMemoria = bloqueOtraL1.bloqueEnMemoria;
                 bloqueBuscado.palabras   = bloqueOtraL1.palabras;
                 bloqueBuscado.válido     = true;
                 bloqueBuscado.modificado = true;
@@ -284,7 +286,7 @@ enum Tipo {memoria, caché};
 struct Bloque (Tipo tipo) {
     static if (tipo == Tipo.memoria) {
         // Es memoria, se inicializa con 1s.
-        palabra [palabrasPorBloque] palabras = 1;
+        palabra [palabrasPorBloque] palabras = 0;
         alias palabras this; // Permite usar el operador de índice.
     } else {
         uint bloqueEnMemoria                 = 0;
