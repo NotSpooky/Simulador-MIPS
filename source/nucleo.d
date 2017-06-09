@@ -56,6 +56,7 @@ import memorias : CachéL1Instrucciones, cachéL1Datos;
             auto instrucción = Instrucción (cachéInstrucciones [registros.contadorDePrograma]);
             try {
                 interpretar (this, instrucción);
+                registros.contadorDePrograma ++;
             } catch (ExcepciónDeFinDePrograma) {
                 // Se terminó de ejecutar, se agrega la información de L1,
                 // registros y cantidad de ciclos ejecutados.
@@ -85,7 +86,6 @@ import memorias : CachéL1Instrucciones, cachéL1Datos;
                     }
                 }
             }
-            registros.contadorDePrograma ++;
             // Envía mensaje informando que finalizó (un tock).
             Respuesta (Respuesta.Tipo.tock).enviar;
         } 
