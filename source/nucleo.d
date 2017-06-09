@@ -2,13 +2,13 @@ module nucleo;
 
 import std.conv : text, to;
 import reloj : esperarTick, Respuesta, enviar, enviarMensajeDeInicio;
-import memorias : CachéL1Instrucciones, bloqueFinInstrucciones, bloqueInicioInstrucciones, palabrasPorBloque, cachéL1Datos;
 
 static shared quantumEspecificadoPorUsuario = 1;
 
 alias palabra = uint;
 enum cantidadNúcleos = 2;
 final class Núcleo {
+import memorias : CachéL1Instrucciones, cachéL1Datos;
     this (uint númeroNúcleo /*Identificador*/) {
         assert (númeroNúcleo >= 0 && númeroNúcleo < cantidadNúcleos);
         this.númeroNúcleo  = númeroNúcleo;
@@ -24,9 +24,9 @@ final class Núcleo {
     static uint númeroNúcleo = -1; 
 
     void ejecutar () {
-        candadoContextos = new shared Mutex ();
         import tui : interfazDeUsuario;
         import interpretador : ExcepciónDeFinDePrograma, Instrucción, Código, interpretar;
+        assert (candadoContextos);
         candadoContextos.lock;
         if (!contextos.length) {
             // Nada que hacer.
@@ -126,6 +126,7 @@ struct Registros {
     alias registros this;
 
     invariant {
+        import memorias : bloqueFinInstrucciones, bloqueInicioInstrucciones, palabrasPorBloque;
         assert (
         /**/ (contadorDePrograma >= bloqueInicioInstrucciones * palabrasPorBloque
         /**/ && contadorDePrograma <= bloqueFinInstrucciones * palabrasPorBloque)
