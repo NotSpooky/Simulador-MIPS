@@ -47,6 +47,7 @@ class CachéL1 (TipoCaché tipoCaché) {
 
         // Se revisa si está el dato en la caché para retornarlo.
         mixin calcularPosiciones;
+        auto bloqueBuscado = &this.bloques [numBloqueL1];
         with (bloqueBuscado) { // Se encontró en la caché y está válido.
             if (válido && bloqueEnMemoria == numBloqueMem) {
                 return (*bloqueBuscado) [numPalabra];
@@ -95,6 +96,7 @@ class CachéL1 (TipoCaché tipoCaché) {
             // Se obtuvo la L1 de este núcleo.
 
             mixin calcularPosiciones;
+            auto bloqueBuscado = &this.bloques [numBloqueL1];
             with (bloqueBuscado) {
                 // Se revisa si está el dato en la caché para retornarlo.
                 if (modificado && bloqueEnMemoria == numBloqueMem) {
@@ -117,9 +119,11 @@ class CachéL1 (TipoCaché tipoCaché) {
                 conseguirCandados ([this.candado, Candado.L2, candadoDeLaOtraL1]);
                 if ( ! revisarEnOtraL1 (bloqueBuscado, numBloqueMem, true) ) {
                     (*bloqueBuscado) = traerDeL2 (numBloqueMem);
-                    assert (válido);
+                } else {
+                    assert (válido, `A la oveja`);
                 }
                 liberarAlFinal (candadoDeLaOtraL1);
+                assert (válido, `Retornando bloque inválido: ` ~ (*bloqueBuscado).to!string);
                 (*bloqueBuscado) [numPalabra] = porColocar;
                 cachéL2.invalidar (numBloqueMem);
                 liberarAlFinal (Candado.L2);
@@ -146,12 +150,11 @@ class CachéL1 (TipoCaché tipoCaché) {
         auto numBloqueMem = índiceEnMemoria / palabrasPorBloque;
         auto numPalabra   = índiceEnMemoria % palabrasPorBloque;
         auto numBloqueL1  = numBloqueMem % this.bloques.length;
-        auto bloqueBuscado = &this.bloques [numBloqueL1];
     }
 
     /// Retorna si el dato se recibió de la otra caché, si no se debe buscar
     /// en L2.
-    bool revisarEnOtraL1 (T)(T bloqueBuscado, uint índiceEnMemoria, bool copiarSiModificado = false) {
+    bool revisarEnOtraL1 (Bloque!(Tipo.caché) * bloqueBuscado, uint índiceEnMemoria, bool copiarSiModificado = false) {
         mixin calcularPosiciones;
         auto bloqueOtraL1 = &L1OtroNúcleo.bloques [numBloqueL1];
         bool porRetornar  = false;
@@ -160,10 +163,10 @@ class CachéL1 (TipoCaché tipoCaché) {
             if (otraLoTiene && modificado) {
                 assert (válido);
                 if (copiarSiModificado) {
-                    (*bloqueBuscado).bloqueEnMemoria = bloqueEnMemoria;
-                    (*bloqueBuscado).palabras        = palabras;
-                    (*bloqueBuscado).válido          = true;
-                    (*bloqueBuscado).modificado      = false;
+                    bloqueBuscado.bloqueEnMemoria = bloqueEnMemoria;
+                    bloqueBuscado.palabras        = palabras;
+                    bloqueBuscado.válido          = true;
+                    bloqueBuscado.modificado      = false;
                     porRetornar = true;
                 }
                 mandarAMemoria (bloqueOtraL1);

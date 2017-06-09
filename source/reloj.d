@@ -20,11 +20,10 @@ struct Respuesta {
     Tipo tipo;
     uint númeroNúcleo;
     Registros registros;
-    //Candado [] candadosPorLiberar = [];
-    /// Envía este mensaje al reloj.
-    void enviar () {
-        tidReloj.send (this); 
-    }
+}
+/// Envía este mensaje al reloj.
+void enviar (Respuesta respuesta) {
+    tidReloj.send (respuesta); 
 }
 
 /// Llamado desde los núcleos para esperar a que el reloj les envíe un tick.

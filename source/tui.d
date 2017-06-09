@@ -120,7 +120,6 @@ class TUI {
         scope (exit) lock.unlock ();
         escribirEn (líneaMensajeInstrucción, mensaje);
         escribirEn (líneaMensajeInstrucción + 1, ""); // limpia la otra.
-        escribirEn (líneaMensajeInstrucción + 2, ""); // limpia la otra.
     }
 
     /// Coloca un mensaje en la posición correspondiente al número de núcleo 

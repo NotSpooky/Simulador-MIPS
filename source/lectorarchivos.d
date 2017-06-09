@@ -108,7 +108,7 @@ palabra [] leerArchivo  (string nombreArchivo) {
 /// Convierte un rango de 4 enteros en una palabra.
 palabra toPalabra (T)(T porConvertir) {
     static assert (palabra.sizeof == 4);
-    assert (porConvertir.length == 4, `Se esperaba recibir un rango de tam 4.`);
+    assert (porConvertir.length == 4, `Se esperaba recibir un rango de tam 4: ` ~ porConvertir.length.to!string);
     import std.file;
     import std.conv;
     // Se colocan los bits en sus posiciones respectivas.

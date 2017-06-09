@@ -1,7 +1,7 @@
 module nucleo;
 
 import std.conv : text, to;
-import reloj : esperarTick, Respuesta, enviarMensajeDeInicio;
+import reloj : esperarTick, Respuesta, enviar, enviarMensajeDeInicio;
 import memorias : CachéL1Instrucciones, bloqueFinInstrucciones, bloqueInicioInstrucciones, palabrasPorBloque, cachéL1Datos;
 
 static shared quantumEspecificadoPorUsuario = 1;
@@ -39,6 +39,8 @@ final class Núcleo {
         contextos = contextos [1..$];
         candadoContextos.unlock;
         while (true) {
+            import core.atomic;
+            contadorQuantum ++;
             if (contadorQuantum >= quantumEspecificadoPorUsuario) {
                 candadoContextos.lock;
                 contextos ~= this.registros;
@@ -50,8 +52,6 @@ final class Núcleo {
             } else {
                 interfazDeUsuario.mostrarQuantum (`Contador de quantum: `, contadorQuantum);
             }
-            import core.atomic;
-            contadorQuantum ++;
             esperarTick;
             auto instrucción = Instrucción (cachéInstrucciones [registros.contadorDePrograma]);
             try {
@@ -103,7 +103,7 @@ struct Registros {
     uint contadorCiclos     =  0;
     /// Identificador.
     string programaFuente   = "";
-    this (uint contadorDePrograma, string programaFuente) {
+    @safe @nogc this (uint contadorDePrograma, string programaFuente) {
         this.contadorDePrograma = contadorDePrograma;
         this.programaFuente     = programaFuente;
     }
