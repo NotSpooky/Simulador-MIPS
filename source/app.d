@@ -56,7 +56,7 @@ void iniciarEjecución (uint numNúcleo) {
     } catch (OwnerTerminated) {
         writeln (`Terminando hilo `, numNúcleo, `, hilo principal terminó.`);
     } catch (Throwable e) {
-        writeln (`Excepción: `, e.msg);
+        writeln (`Excepción: `, e.info);
         import core.stdc.stdlib : exit;
         exit (1);
     }

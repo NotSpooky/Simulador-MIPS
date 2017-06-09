@@ -36,8 +36,8 @@ enum TipoCaché {datos, instrucciones}
 class CachéL1 (TipoCaché tipoCaché) {
     Bloque!(Tipo.caché) [ bloquesEnL1 ] bloques;
 
+    /// Implementa el Load word.
     /// Se indexa igual que la memoria, pero índice es por palabra, no por bloque.
-    /// Ejemplo de uso: auto a = caché [índiceEnMemoria];
     auto opIndex (uint índiceEnMemoria) {
         static if (tipoCaché == TipoCaché.datos) {
             conseguirCandados ([this.candado]);
@@ -46,64 +46,43 @@ class CachéL1 (TipoCaché tipoCaché) {
         // Se obtuvo la L1 de este núcleo.
 
         // Se revisa si está el dato en la caché para retornarlo.
-        auto numBloqueMem = índiceEnMemoria / palabrasPorBloque;
-        auto numPalabra   = índiceEnMemoria % palabrasPorBloque;
-        auto numBloqueL1  = numBloqueMem % this.bloques.length;
-        auto bloqueBuscado = &this.bloques [numBloqueL1];
-        if (bloqueBuscado.válido && bloqueBuscado.bloqueEnMemoria == numBloqueMem) {
-            return (*bloqueBuscado) [numPalabra];
-        }
-
-        // No se encontró.
-
-        static if (tipoCaché == TipoCaché.datos) {
-            conseguirCandados ([this.candado, Candado.L2]);
-            // Se obtuvo la L2.
-            if (bloqueBuscado.modificado) { 
-                // Se tiene que escribir a memoria porque es write back.
-                assert (bloqueBuscado.válido);
-                mandarAMemoria (bloqueBuscado);
+        mixin calcularPosiciones;
+        with (bloqueBuscado) { // Se encontró en la caché y está válido.
+            if (válido && bloqueEnMemoria == numBloqueMem) {
+                return (*bloqueBuscado) [numPalabra];
             }
 
-            // Se tiene el bloque libre para traerlo.
-            // Se intenta conseguir la otra L1 para ver si tiene el dato (snooping).
-            conseguirCandados ([this.candado, Candado.L2, candadoDeLaOtraL1]);
-            auto bloqueOtraL1 = &L1OtroNúcleo.bloques [numBloqueL1];
-            if (bloqueOtraL1.modificado && bloqueOtraL1.bloqueEnMemoria == numBloqueMem) {
-                // El otro lo tiene
-                assert (bloqueOtraL1.válido);
-                bloqueBuscado.bloqueEnMemoria = bloqueOtraL1.bloqueEnMemoria;
-                bloqueBuscado.palabras   = bloqueOtraL1.palabras;
-                bloqueBuscado.válido     = true;
-                bloqueBuscado.modificado = false;
-                bloqueOtraL1.modificado  = false;
-                mandarAMemoria (bloqueOtraL1);
+            // No se encontró.
+            static if (tipoCaché == TipoCaché.datos) { // Se usa snooping y L2.
+                conseguirCandados ([this.candado, Candado.L2]);
+                // Se obtuvo la L2.
+                if (modificado) { 
+                    // Se tiene que escribir a memoria porque es write back.
+                    assert (válido);
+                    mandarAMemoria (bloqueBuscado);
+                    assert (!válido);
+                }
+
+                // Se tiene el bloque libre para traerlo.
+                // Se intenta conseguir la otra L1 para ver si tiene el dato (snooping).
+                conseguirCandados ([this.candado, Candado.L2, candadoDeLaOtraL1]);
+                revisarEnOtraL1 (bloqueBuscado, índiceEnMemoria);
                 liberarAlFinal (candadoDeLaOtraL1);
+                (*bloqueBuscado) = traerDeL2 (numBloqueMem);
                 liberarAlFinal (Candado.L2);
-                return (*bloqueBuscado)[numPalabra];
+            } else { // Es de instrucciones, va directo a mem.
+                conseguirCandados ([Candado.instrucciones]);
+                // Se trae de memoria.
+                foreach (i; 0..ciclosBloqueMemL2) {
+                    interfazDeUsuario.mostrar (`Trayendo bloque de instrucción: `, numBloqueMem, ` de Mem: `, i + 1, '/', ciclosBloqueMemL2);
+                    relojazo;
+                }
+                (*bloqueBuscado) = Bloque!(Tipo.caché) (memoriaPrincipal [numBloqueMem], numBloqueMem);
+                liberarAlFinal(Candado.instrucciones);
             }
-            /// No está en la otra L1, se suelta esa caché y se busca en L2.
-            liberarAlFinal (candadoDeLaOtraL1);
-            foreach (i; 0..ciclosBloqueL2L1) {
-                interfazDeUsuario.mostrar (`Trayendo bloque de datos: `, numBloqueMem, ` de L2: `, i + 1, '/', ciclosBloqueL2L1);
-                relojazo;
-            }
-            (*bloqueBuscado) = cachéL2 [numBloqueMem];
-            liberarAlFinal (Candado.L2);
-        } else {
-            conseguirCandados ([Candado.instrucciones]);
-            // Se trae de memoria.
-            foreach (i; 0..ciclosBloqueMemL2) {
-                interfazDeUsuario.mostrar (`Trayendo bloque de instrucción: `, numBloqueMem, ` de Mem: `, i + 1, '/', ciclosBloqueMemL2);
-                relojazo;
-            }
-            (*bloqueBuscado) = Bloque!(Tipo.caché) (memoriaPrincipal [numBloqueMem], numBloqueMem);
-            liberarAlFinal(Candado.instrucciones);
+            assert (válido, `Retornando bloque inválido.`);
         }
-
-        assert (bloqueBuscado.válido);
         return (*bloqueBuscado)[numPalabra]; 
-
     }
 
     static if (tipoCaché == TipoCaché.datos) {
@@ -115,79 +94,105 @@ class CachéL1 (TipoCaché tipoCaché) {
             scope (exit) liberarAlFinal (this.candado);
             // Se obtuvo la L1 de este núcleo.
 
-            // Se revisa si está el dato en la caché para retornarlo.
-            auto numBloqueMem = índiceEnMemoria / palabrasPorBloque;
-            auto numPalabra   = índiceEnMemoria % palabrasPorBloque;
-            auto numBloqueL1  = numBloqueMem % this.bloques.length;
-            auto bloqueBuscado = &this.bloques [numBloqueL1];
-            if (bloqueBuscado.válido && bloqueBuscado.bloqueEnMemoria == numBloqueMem) {
-                (*bloqueBuscado)[numPalabra] = porColocar;
-                return;
-            }
+            mixin calcularPosiciones;
+            with (bloqueBuscado) {
+                // Se revisa si está el dato en la caché para retornarlo.
+                if (modificado && bloqueEnMemoria == numBloqueMem) {
+                    assert (válido);
+                    (*bloqueBuscado)[numPalabra] = porColocar;
+                    return;
+                }
 
-            // No se encontró.
-            conseguirCandados ([this.candado, Candado.L2]);
-            // Se obtuvo la L2.
-            if (bloqueBuscado.modificado) { 
-                // Se tiene que escribir a memoria porque es write back.
-                assert (bloqueBuscado.válido, `bloqueBuscado no es válido.`);
-                mandarAMemoria (bloqueBuscado);
-            }
+                // No se encontró.
+                conseguirCandados ([this.candado, Candado.L2]);
+                // Se obtuvo la L2 y memoria.
+                if (modificado) { 
+                    // Se tiene que escribir a memoria porque es write back.
+                    assert (válido, `bloqueBuscado no es válido.`);
+                    mandarAMemoria (bloqueBuscado);
+                }
 
-            // Se tiene el bloque libre para traerlo.
-            // Se intenta conseguir la otra L1 para ver si tiene el dato (snooping).
-            conseguirCandados ([this.candado, Candado.L2, candadoDeLaOtraL1]);
-            auto bloqueOtraL1 = &L1OtroNúcleo.bloques [numBloqueL1];
-            if (bloqueOtraL1.modificado && bloqueOtraL1.bloqueEnMemoria == numBloqueMem) {
-                // El otro lo tiene
-                assert (bloqueOtraL1.válido, `Otra L1 no es válido.`);
-                bloqueBuscado.bloqueEnMemoria = bloqueOtraL1.bloqueEnMemoria;
-                bloqueBuscado.palabras   = bloqueOtraL1.palabras;
-                bloqueBuscado.válido     = true;
-                bloqueBuscado.modificado = true;
-                bloqueOtraL1.válido      = false;
-                bloqueOtraL1.modificado  = false;
-                mandarAMemoria (bloqueOtraL1);
+                // Se tiene el bloque libre para traerlo.
+                // Se intenta conseguir la otra L1 para ver si tiene el dato (snooping).
+                conseguirCandados ([this.candado, Candado.L2, candadoDeLaOtraL1]);
+                if ( ! revisarEnOtraL1 (bloqueBuscado, numBloqueMem, true) ) {
+                    (*bloqueBuscado) = traerDeL2 (numBloqueMem);
+                    assert (válido);
+                }
                 liberarAlFinal (candadoDeLaOtraL1);
-                liberarAlFinal (Candado.L2);
                 (*bloqueBuscado) [numPalabra] = porColocar;
                 cachéL2.invalidar (numBloqueMem);
+                liberarAlFinal (Candado.L2);
                 return;
             }
-
-            /// No está en la otra L1, se suelta esa caché y se busca en L2.
-            liberarAlFinal(candadoDeLaOtraL1);
-            foreach (i; 0..ciclosBloqueL2L1) {
-                interfazDeUsuario.mostrar (`Trayendo bloque `, numBloqueMem, ` de L2: `, i + 1, '/', ciclosBloqueL2L1);
-                relojazo;
-            }
-            (*bloqueBuscado) = cachéL2 [numBloqueMem];
-            cachéL2.invalidar (numBloqueMem);
-            (*bloqueBuscado) [numPalabra] = porColocar;
-            liberarAlFinal (Candado.L2);
         }
     }
 
-    /// Envia bloquePorMandar de caché L1 a memoria.
-    private void mandarAMemoria (Bloque!(Tipo.caché) * bloquePorMandar) {
-        // Es write back y está modificado => Hay que escribirlo a L2/mem.
-        foreach (i; 0..ciclosBloqueMemL2 + ciclosBloqueL2L1) {
-            interfazDeUsuario.mostrar (
-            /**/ `Escribiendo bloque modificado en memoria: `, i+1, '/'
-            /**/ , ciclosBloqueL2L1 + ciclosBloqueMemL2
-            );
+    private:
+
+    /// Retorna un bloque de caché L2 para ponerlo en una L1 de datos.
+    auto traerDeL2 (uint numBloqueMem) {
+        foreach (i; 0..ciclosBloqueL2L1) {
+            interfazDeUsuario.mostrar (`Trayendo bloque de datos: `, numBloqueMem, ` de L2: `, i + 1, '/', ciclosBloqueL2L1);
             relojazo;
         }
+        auto porRetornar = cachéL2 [numBloqueMem];
+        assert (porRetornar.válido && !porRetornar.modificado);
+        return porRetornar;
+    }
+
+    /// Calcula datos usados tanto en loads como stores relativos a posiciones.
+    mixin template calcularPosiciones () {
+        auto numBloqueMem = índiceEnMemoria / palabrasPorBloque;
+        auto numPalabra   = índiceEnMemoria % palabrasPorBloque;
+        auto numBloqueL1  = numBloqueMem % this.bloques.length;
+        auto bloqueBuscado = &this.bloques [numBloqueL1];
+    }
+
+    /// Retorna si el dato se recibió de la otra caché, si no se debe buscar
+    /// en L2.
+    bool revisarEnOtraL1 (T)(T bloqueBuscado, uint índiceEnMemoria, bool copiarSiModificado = false) {
+        mixin calcularPosiciones;
+        auto bloqueOtraL1 = &L1OtroNúcleo.bloques [numBloqueL1];
+        bool porRetornar  = false;
+        with (bloqueOtraL1) {
+            auto otraLoTiene = bloqueEnMemoria == numBloqueMem;
+            if (otraLoTiene && modificado) {
+                assert (válido);
+                if (copiarSiModificado) {
+                    (*bloqueBuscado).bloqueEnMemoria = bloqueEnMemoria;
+                    (*bloqueBuscado).palabras        = palabras;
+                    (*bloqueBuscado).válido          = true;
+                    (*bloqueBuscado).modificado      = false;
+                    porRetornar = true;
+                }
+                mandarAMemoria (bloqueOtraL1);
+                assert (!válido && !modificado);
+            }
+        }
+        return porRetornar;
+    }
+    /// Envia bloquePorMandar de caché L1 a memoria.
+    void mandarAMemoria (Bloque!(Tipo.caché) * bloquePorMandar) {
         with (bloquePorMandar) {
+            assert (modificado && válido);
+            modificado = false;
+            válido     = false;
+            // Es write back y está modificado => Hay que escribirlo a L2/mem.
+            foreach (i; 0..ciclosBloqueMemL2 + ciclosBloqueL2L1) {
+                interfazDeUsuario.mostrar (
+                /**/ `Escribiendo bloque modificado en memoria: `, i+1, '/'
+                /**/ , ciclosBloqueL2L1 + ciclosBloqueMemL2
+                );
+                relojazo;
+            }
             memoriaPrincipal [bloqueEnMemoria] = palabras;
-            válido                             = false;
-            modificado                         = false;
         }
     }
     /// Recibe un arreglo de candados, donde el último es el que todavía no se
     /// ha conseguido y el resto son los que hay que tener (en orden)
     /// para poder intentar conseguir el último.
-    private void conseguirCandados (Candado [] candados, int numLínea = __LINE__) {
+    void conseguirCandados (Candado [] candados, int numLínea = __LINE__) {
         assert (candados.length, `No se recibieron candados.`);
         while (!m_candados [candados [$-1]].tryLock) {
             interfazDeUsuario.mostrar (`Falló en obtener candado (L` ~ numLínea.to!string ~ `)`);
@@ -214,15 +219,15 @@ class CachéL1 (TipoCaché tipoCaché) {
             goto volverAIntentar;
         }
     }
-    private void liberarAlFinal (Candado candado) {
+    void liberarAlFinal (Candado candado) {
         estampillasCandados [candado] = cicloActual;
         m_candados [candado].unlock;
     }
 
     // Usado para accesar cachés L1.
     static assert (cantidadNúcleos == 2);
-    private auto ref candado () { return Núcleo.númeroNúcleo == 0 ? Candado.L1Datos1 : Candado.L1Datos2; }
-    private auto ref candadoDeLaOtraL1 () { return Núcleo.númeroNúcleo == 0 ? Candado.L1Datos2 : Candado.L1Datos1; }
+    auto ref candado () { return Núcleo.númeroNúcleo == 0 ? Candado.L1Datos1 : Candado.L1Datos2; }
+    auto ref candadoDeLaOtraL1 () { return Núcleo.númeroNúcleo == 0 ? Candado.L1Datos2 : Candado.L1Datos1; }
 
 }
 // Lista de candados por liberar al final del ciclo.
