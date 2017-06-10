@@ -4,7 +4,7 @@ import std.stdio     : File, writeln, readln;
 import std.algorithm : map, filter, fold, reduce, sort, each;
 import std.regex     : splitter, regex, matchFirst;
 import std.conv      : to;
-import memorias      : palabra, rellenarMemoria
+import memorias      : palabra, rellenarMemoria, bytesPorPalabra
 /**/ , bloqueInicioInstrucciones, palabrasPorBloque;
 auto preguntarPorHilillos () {
     import std.file;
@@ -70,7 +70,7 @@ auto preguntarPorHilillos () {
         writeln (i, `: `, baseName(archivo));
     }
 
-    uint [] posInicialesHilillos = [bloqueInicioInstrucciones * palabrasPorBloque];
+    uint [] posInicialesHilillos = [bloqueInicioInstrucciones * palabrasPorBloque * bytesPorPalabra];
     string valLeido = ""; 
     do {
         valLeido = readln [0..$-1];
@@ -83,7 +83,7 @@ auto preguntarPorHilillos () {
         .map!(to!uint)
         .tee! (indice => archivosSel ~= archivosDirectorio [indice])
         .map! (indice => leerArchivo (archivosDirectorio [indice]))
-        .tee! (a => posInicialesHilillos ~= to!uint (a.length + posInicialesHilillos [$-1]))
+        .tee! (a => posInicialesHilillos ~= to!uint ((a.length * bytesPorPalabra) + posInicialesHilillos [$-1]))
         .reduce!`a ~ b`
     );
     assert (posInicialesHilillos.length > 1);

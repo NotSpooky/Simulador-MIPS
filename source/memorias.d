@@ -7,7 +7,7 @@ import core.sync.mutex : Mutex;
 import tui             : interfazDeUsuario;
 
 public alias palabra = int;
-enum bytesPorPalabra           = palabra.sizeof;
+enum bytesPorPalabra           = palabra.sizeof.to!uint;
 enum bloqueInicioInstrucciones = 24;
 enum bloqueFinInstrucciones    = 63;
 enum palabrasPorBloque         = 4;
@@ -294,7 +294,7 @@ enum Tipo {memoria, caché};
 struct Bloque (Tipo tipo) {
     static if (tipo == Tipo.memoria) {
         // Es memoria, se inicializa con 1s.
-        palabra [palabrasPorBloque] palabras = 0;
+        palabra [palabrasPorBloque] palabras = 1;
         alias palabras this; // Permite usar el operador de índice.
     } else {
         uint bloqueEnMemoria                 = 0;

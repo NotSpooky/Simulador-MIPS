@@ -8,7 +8,7 @@ struct Instrucción {
     uint rf2;
     short inm;
     @disable this ();
-    import memorias : Bloque, Tipo, palabra;
+    import memorias : Bloque, Tipo, palabra, bytesPorPalabra;
     @safe this (palabra palabraInstrucción) {
         import std.conv : to;
         this.código = ((palabraInstrucción >> 26) & 0b111111).to!Código;
@@ -81,7 +81,7 @@ static void interpretar (Núcleo núcleo, Instrucción instrucción) {
             assert (rf2 == 0, `rf2 debe ser 0`);
             if (Rx == 0) {
                 // El 1 se suma automáticamente
-                núcleo.registros.contadorDePrograma += inm; 
+                núcleo.registros.contadorDePrograma += (inm * bytesPorPalabra); 
             }
             break;
         case Código.BNEZ:
@@ -89,15 +89,15 @@ static void interpretar (Núcleo núcleo, Instrucción instrucción) {
             auto Rx = núcleo.registros [rf1];
             assert (rf2 == 0, `rf2 debe ser 0`);
             if (Rx != 0) {
-                núcleo.registros.contadorDePrograma += inm;
+                núcleo.registros.contadorDePrograma += (inm * bytesPorPalabra);
             }
             break;
         case Código.JAL:
             // R31 <-- PC, PC += n
             assert (rf1 == 0 && rf2 == 0, `rf1 y rf2 deberían ser 0`);
-            assert (inm % 4 == 0, `Se esperaba un inmediato múltiplo de 4.`);
+            assert (inm % bytesPorPalabra == 0, `Se esperaba un inmediato múltiplo de 4.`);
             núcleo.registros [31] = núcleo.registros.contadorDePrograma;
-            núcleo.registros.contadorDePrograma += (inm/4);
+            núcleo.registros.contadorDePrograma += inm;
             break;
         case Código.JR:
             // PC <-- (Rx)

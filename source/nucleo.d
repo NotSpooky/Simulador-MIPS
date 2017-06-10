@@ -2,13 +2,13 @@ module nucleo;
 
 import std.conv : text, to;
 import reloj : esperarTick, Respuesta, enviar, enviarMensajeDeInicio;
+import memorias : CachéL1Instrucciones, cachéL1Datos, bloqueFinInstrucciones, bloqueInicioInstrucciones, palabrasPorBloque, bytesPorPalabra;
 
 static shared quantumEspecificadoPorUsuario = 1;
 
 alias palabra = uint;
 enum cantidadNúcleos = 2;
 final class Núcleo {
-import memorias : CachéL1Instrucciones, cachéL1Datos;
     this (uint númeroNúcleo /*Identificador*/) {
         assert (númeroNúcleo >= 0 && númeroNúcleo < cantidadNúcleos);
         this.númeroNúcleo  = númeroNúcleo;
@@ -53,10 +53,11 @@ import memorias : CachéL1Instrucciones, cachéL1Datos;
                 interfazDeUsuario.mostrarQuantum (`Contador de quantum: `, contadorQuantum);
             }
             esperarTick;
-            auto instrucción = Instrucción (cachéInstrucciones [registros.contadorDePrograma]);
+            assert (registros.contadorDePrograma % bytesPorPalabra == 0);
+            auto instrucción = Instrucción (cachéInstrucciones [registros.contadorDePrograma / bytesPorPalabra]);
             try {
                 interpretar (this, instrucción);
-                registros.contadorDePrograma ++;
+                registros.contadorDePrograma += 4;
             } catch (ExcepciónDeFinDePrograma) {
                 // Se terminó de ejecutar, se agrega la información de L1,
                 // registros y cantidad de ciclos ejecutados.
@@ -126,10 +127,9 @@ struct Registros {
     alias registros this;
 
     invariant {
-        import memorias : bloqueFinInstrucciones, bloqueInicioInstrucciones, palabrasPorBloque;
         assert (
-        /**/ (contadorDePrograma >= bloqueInicioInstrucciones * palabrasPorBloque
-        /**/ && contadorDePrograma <= bloqueFinInstrucciones * palabrasPorBloque)
+        /**/ (contadorDePrograma >= bloqueInicioInstrucciones * palabrasPorBloque * bytesPorPalabra
+        /**/ && contadorDePrograma <= bloqueFinInstrucciones * palabrasPorBloque * bytesPorPalabra)
         /**/ || (contadorDePrograma == -1),
         /**/ `ContadorDePrograma fuera de rango permitido: ` 
         /**/ ~ contadorDePrograma.to!string);
