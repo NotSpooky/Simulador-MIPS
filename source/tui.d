@@ -286,15 +286,15 @@ class TUI {
         escribirEn (líneaInstruccionesUsuario + 2, `'z' mueve los registros hacia atrás, 'x' hacia delante.`);
     }
 
-    private auto espacioParaBytes () {
+    private auto espacioParaPalabras () {
         return (terminal.width - 2 /*Márgenes*/) - ubicaciónDeMemoria [0];
     }
-    /// Retorna cuántos bytes hexadecimales se pueden mostrar en una línea 
-    /// de la tabla de memoria.
+    /// Retorna cuántas palabras se pueden mostrar en una línea de la tabla
+    /// de memoria.
     private auto palabrasPorLínea () {
         import std.math : truncPow2;
          // Considera un espacio al final.
-        return truncPow2 (espacioParaBytes / (tamañoPalabra + 1));
+        return truncPow2 (espacioParaPalabras / (tamañoPalabra + 1));
     }
     private Terminal terminal;
     private RealTimeConsoleInput entrada;

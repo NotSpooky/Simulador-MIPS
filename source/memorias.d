@@ -2,7 +2,7 @@ module memorias;
 
 import std.conv        : to, text;
 import reloj           : relojazo, cicloActual;
-import nucleo          : Núcleo, cantidadNúcleos;
+import nucleo          : Núcleo, cantidadNúcleos, núcleos;
 import core.sync.mutex : Mutex;
 import tui             : interfazDeUsuario;
 
@@ -34,17 +34,21 @@ alias CachéL1Instrucciones = CachéL1!(TipoCaché.instrucciones);
 
 enum TipoCaché {datos, instrucciones}
 class CachéL1 (TipoCaché tipoCaché) {
+    import nucleo : Núcleo;
     Bloque!(Tipo.caché) [ bloquesEnL1 ] bloques;
 
     /// Implementa el Load word.
     /// Se indexa igual que la memoria, pero índice es por palabra, no por bloque.
-    auto opIndex (uint índiceEnMemoria) {
+    auto obtenerPalabra (bool esLL = false) (uint índiceEnMemoria) {
         static if (tipoCaché == TipoCaché.datos) {
             conseguirCandados ([this.candado]);
             scope (exit) liberarAlFinal (this.candado);
         }
         // Se obtuvo la L1 de este núcleo.
 
+        static if (esLL) {
+            Núcleo.registros.rl = índiceEnMemoria;
+        }
         // Se revisa si está el dato en la caché para retornarlo.
         mixin calcularPosiciones;
         auto bloqueBuscado = &this.bloques [numBloqueL1];
@@ -53,6 +57,13 @@ class CachéL1 (TipoCaché tipoCaché) {
                 return (*bloqueBuscado) [numPalabra];
             }
 
+            // Le va a caer encima, hay que revisar si poner RL en -1.
+            if ( bloqueEnMemoria == Núcleo.registros.rl/(palabrasPorBloque * bytesPorPalabra) ) {
+                assert (bloqueEnMemoria != numBloqueMem);
+                // Le va a caer al bloque del RL.
+                Núcleo.registros.rl = -1;
+            }
+            
             // No se encontró.
             static if (tipoCaché == TipoCaché.datos) { // Se usa snooping y L2.
                 conseguirCandados ([this.candado, Candado.L2]);
@@ -90,11 +101,18 @@ class CachéL1 (TipoCaché tipoCaché) {
         /// Asigna un valor a memoria. 
         /// Usa de índice el número de palabra, no bloque ni byte.
         /// Usado para stores.
-        void opIndexAssign (palabra porColocar, uint índiceEnMemoria) {
+        void asignar (bool esSC = false) (palabra porColocar, uint índiceEnMemoria, void delegate () acciónSiNoAtómico) {
             conseguirCandados ([this.candado]);
             scope (exit) liberarAlFinal (this.candado);
             // Se obtuvo la L1 de este núcleo.
 
+            static if (esSC) {
+                if (Núcleo.registros.rl != índiceEnMemoria) {
+                    interfazDeUsuario.mostrar (`RL distinto, no se carga`);
+                    acciónSiNoAtómico ();
+                    return;
+                }
+            }
             mixin calcularPosiciones;
             auto bloqueBuscado = &this.bloques [numBloqueL1];
             with (bloqueBuscado) {
@@ -105,6 +123,12 @@ class CachéL1 (TipoCaché tipoCaché) {
                     return;
                 }
 
+                // Le va a caer encima, hay que revisar si poner RL en -1.
+                if ( bloqueEnMemoria == Núcleo.registros.rl/(palabrasPorBloque * bytesPorPalabra) ) {
+                    assert (bloqueEnMemoria != numBloqueMem);
+                    // Le va a caer al bloque del RL.
+                    Núcleo.registros.rl = -1;
+                }
                 // No se encontró.
                 conseguirCandados ([this.candado, Candado.L2]);
                 // Se obtuvo la L2 y memoria.
@@ -156,6 +180,11 @@ class CachéL1 (TipoCaché tipoCaché) {
     /// en L2.
     bool revisarEnOtraL1 (Bloque!(Tipo.caché) * bloqueBuscado, uint índiceEnMemoria, bool copiarSiModificado = false) {
         mixin calcularPosiciones;
+        static assert (cantidadNúcleos == 2);
+        auto posOtro = Núcleo.númeroNúcleo == 0 ? 1 : 0;
+        if (núcleos [posOtro].registros.rl / (palabrasPorBloque * bytesPorPalabra) == numBloqueMem) {
+            núcleos [posOtro].registros.rl = -1;
+        }
         auto bloqueOtraL1 = &L1OtroNúcleo.bloques [numBloqueL1];
         bool porRetornar  = false;
         with (bloqueOtraL1) {
