@@ -328,23 +328,7 @@ struct Bloque (Tipo tipo) {
     }
 }
 
-/// Convierte una palabra a 4 bytes. El opuesto de toPalabra.
-auto toBytes (palabra porConvertir) {
-    return [
-    /**/ cast (byte) ( porConvertir >> 24),
-    /**/ cast (byte) ((porConvertir >> 16) & 0xFF),
-    /**/ cast (byte) ((porConvertir >> 8) & 0xFF),
-    /**/ cast (byte) ( porConvertir & 0xFF)
-    ];
-}
-
-auto memoriaPrincipalEnBytes () {
-    byte [] porRetornar = [];
-    foreach (bloqueMem; memoriaPrincipal) {
-        auto palabrasDelBloque = bloqueMem.palabras;
-        foreach (palabra; palabrasDelBloque) {
-            porRetornar ~= palabra.toBytes;
-        }
-    }
-    return porRetornar;
+auto memoriaPrincipalEnPalabras () {
+    import std.algorithm;
+    return memoriaPrincipal.reduce!`a ~ b`;
 }
