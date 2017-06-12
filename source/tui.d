@@ -60,6 +60,7 @@ class TUI {
     import memorias : memoriaPrincipalEnPalabras;
     /// Actualiza los datos dentro del marco de la memoria.
     void actualizarMemoriaMostrada () {
+        if (this.modoAvance == ModoAvance.rápido) return;
         lock.lock;
         scope (exit) lock.unlock;
         auto memoria = memoriaPrincipalEnPalabras;
@@ -117,6 +118,7 @@ class TUI {
     /// Coloca un mensaje relativo a cuál instrucción se está ejecutando
     /// en la posición correspondiente a este núcleo.
     void mostrarInstrucción (T...)(T mensaje) {
+        if (this.modoAvance == ModoAvance.rápido) return;
         lock.lock ();
         scope (exit) lock.unlock ();
         escribirEn (líneaMensajeInstrucción, mensaje);
@@ -126,12 +128,14 @@ class TUI {
     /// Coloca un mensaje en la posición correspondiente al número de núcleo 
     /// de este hilo.
     void mostrar (T...)(T mensaje) {
+        if (this.modoAvance == ModoAvance.rápido) return;
         lock.lock ();
         scope (exit) lock.unlock ();
         escribirEn (líneaMensajeInstrucción + 1, mensaje);
     }
 
     void mostrarQuantum (T...)(T mensaje) {
+        if (this.modoAvance == ModoAvance.rápido) return;
         lock.lock;
         scope (exit) lock.unlock ();
         escribirEn (líneaMensajeInstrucción + 2, mensaje);
@@ -143,14 +147,14 @@ class TUI {
         scope (exit) lock.unlock ();
         if (terminóEjecución) {
             static assert (cantidadFilasInstrucciones == 3, `Acá se supone que hay 3 filas.`);
-            escribirEn (líneaInstruccionesUsuario
-            /**/, `Terminó ejecución`);
+            escribirEn (líneaInstruccionesUsuario, `Terminó ejecución`);
             escribirEn (líneaInstruccionesUsuario + 1, `Presione n y enter para finalizar.`);
             escribirEn (líneaInstruccionesUsuario + 2, ""); // Lo limpia.
+            this.modoAvance = ModoAvance.manual;
         }
         this.actualizarMemoriaMostrada;
         this.actualizarRegistrosMostrados;
-        if (terminóEjecución || this.modoAvance == ModoAvance.manual) {
+        if (this.modoAvance == ModoAvance.manual) {
             ObtenerEntradas: while (true) {
                 auto leido = entrada.getch;
                 escribirEn (líneaSalidaEstándar, "");
@@ -161,6 +165,10 @@ class TUI {
                     case 'c':
                         // Cambia el modo y continúa.
                         this.modoAvance = ModoAvance.continuo;
+                        break ObtenerEntradas;
+                    case 'r':
+                        // Cambia el modo y continúa.
+                        this.modoAvance = ModoAvance.rápido;
                         break ObtenerEntradas;
                     case 'w':
                         // Muestra posiciones anteriores de memoria.
@@ -195,8 +203,11 @@ class TUI {
     private uint posInicialRegistros           = 0;
     /// Mensaje por mostrar en los registros de cada núcleo.
     private string [cantidadNúcleos] registros = [``,``];
-    private enum ModoAvance {continuo, manual};
-    private ModoAvance modoAvance = ModoAvance.manual;
+    /// Continuo no se interrumpe pero muestra la información,
+    /// Manual es paso por paso,
+    /// Rápido solo muestra hasta el final.
+    private enum ModoAvance {continuo, manual, rápido};
+    private shared ModoAvance modoAvance = ModoAvance.manual;
     private uint byteInicialMostrado () {
         return filaInicialDeMemoria * palabrasPorLínea;
     }
@@ -214,6 +225,7 @@ class TUI {
     /// Actualiza en la pantalla los registros a partir de la posición
     /// de posInicialRegistros.
     private void actualizarRegistrosMostrados () {
+        if (this.modoAvance == ModoAvance.rápido) return;
         foreach (uint numNúcleo, registro; this.registros) {
             auto líneaPorUsar = líneaRegistros 
                 // Cada núcleo ocupa 3 filas
