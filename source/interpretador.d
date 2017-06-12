@@ -113,7 +113,7 @@ static void interpretar (Núcleo núcleo, Instrucción instrucción) {
             /**/ , `LW no alineado: ` ~ posBase.to!string);
             uint posición = (posBase / bytesPorPalabra).to!int;
             assert (posición >= 0 && posición < 256, `Pos fuera de memoria.`);
-            núcleo.registros [rf2] = cachéL1Datos.obtenerPalabra(posición);
+            núcleo.registros [rf2] = cachéL1Datos [posición];
             break;
         case Código.SW:
             // Memoria (n + (Ry)) <-- Rx 
@@ -123,34 +123,15 @@ static void interpretar (Núcleo núcleo, Instrucción instrucción) {
             assert ((posBase % bytesPorPalabra) == 0, `SW no alineado: ` ~ posBase.to!string);
             uint posición = (posBase / bytesPorPalabra).to!int;
             assert (posición >= 0 && posición < 256);
-            cachéL1Datos.asignar(posición, Rx, () {});
+            cachéL1Datos [posición] = Rx;
             break;
         case Código.FIN:
             // Stop stop stop stop.
             throw new ExcepciónDeFinDePrograma ();
         case Código.LL:
-            // Rx <-- Memoria (n + (Ry))
-            // RL <-- n + (Ry)
-            int Ry = núcleo.registros [rf1];
-            int posBase = Ry + inm;
-            assert ((posBase % bytesPorPalabra) == 0
-            /**/ , `LL no alineado: ` ~ posBase.to!string);
-            uint posición = (posBase / bytesPorPalabra).to!int;
-            assert (posición >= 0 && posición < 256, `Pos fuera de memoria.`);
-            núcleo.registros [rf2] = cachéL1Datos.obtenerPalabra!true(posición);
-            break;
-
+            assert (0, `TO DO: LL`);
         case Código.SC:
-            // Memoria (n + (Ry)) <-- Rx 
-            int Rx = núcleo.registros [rf2];
-            int Ry = núcleo.registros [rf1];
-            int posBase = Ry + inm;
-            assert ((posBase % bytesPorPalabra) == 0, `SC no alineado: ` ~ posBase.to!string);
-            uint posición = (posBase / bytesPorPalabra).to!int;
-            assert (posición >= 0 && posición < 256);
-            cachéL1Datos.asignar!true(posición, Rx, () {núcleo.registros [rf2] = 0;});
-            break;
-
+            assert (0, `TO DO: SC`);
     }
 }
 

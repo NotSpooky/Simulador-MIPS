@@ -12,7 +12,6 @@ final class Núcleo {
     this (uint númeroNúcleo /*Identificador*/) {
         assert (númeroNúcleo >= 0 && númeroNúcleo < cantidadNúcleos);
         this.númeroNúcleo  = númeroNúcleo;
-        núcleos [númeroNúcleo] = cast (shared Núcleo) this;
         cachéInstrucciones = new CachéL1Instrucciones ();
         enviarMensajeDeInicio;
     }
@@ -44,8 +43,6 @@ final class Núcleo {
             contadorQuantum ++;
             if (contadorQuantum >= quantumEspecificadoPorUsuario) {
                 candadoContextos.lock;
-                // El otro núcleo igual solo puede invalidarlo.
-                this.registros.rl = -1;
                 contextos ~= this.registros;
                 contadorQuantum = 0;
                 this.registros = contextos [0];
@@ -57,7 +54,7 @@ final class Núcleo {
             }
             esperarTick;
             assert (registros.contadorDePrograma % bytesPorPalabra == 0);
-            auto instrucción = Instrucción (cachéInstrucciones.obtenerPalabra (registros.contadorDePrograma / bytesPorPalabra) );
+            auto instrucción = Instrucción (cachéInstrucciones [registros.contadorDePrograma / bytesPorPalabra]);
             try {
                 interpretar (this, instrucción);
                 registros.contadorDePrograma += 4;
@@ -66,9 +63,6 @@ final class Núcleo {
                 // registros y cantidad de ciclos ejecutados.
                 synchronized {
                     string bloques = "";
-                    import memorias : cachéL1Datos;
-                    // El otro núcleo igual solo puede invalidarlo.
-                    this.registros.rl = -1;
                     foreach (i, bloque; cachéL1Datos.bloques) {
                         bloques ~= text ("\nBloque ", i, ":\n", bloque);
                     }
@@ -102,14 +96,14 @@ final class Núcleo {
 /// Contiene un contexto. Los registros normales se accesan con el operador de
 /// [], el rl y contadorDePrograma con notación de punto (ejemplo regs.rl).
 struct Registros {
-    palabra [32] registros      =  0;
-    static palabra rl           = -1;
+    palabra [32] registros =  0;
+    int          rl        = -1;
     /// Tiene el número de instrucción, no de bloque ni de byte.
-    palabra contadorDePrograma  = -1; 
+    uint contadorDePrograma = -1; 
     /// Lleva cuántos ciclos lleva ejecutándose.
-    uint contadorCiclos         =  0;
+    uint contadorCiclos     =  0;
     /// Identificador.
-    string programaFuente       = "";
+    string programaFuente   = "";
     @safe @nogc this (uint contadorDePrograma, string programaFuente) {
         this.contadorDePrograma = contadorDePrograma;
         this.programaFuente     = programaFuente;
@@ -145,5 +139,5 @@ struct Registros {
 __gshared Registros [] contextos = [];
 import core.thread : Mutex;
 shared Mutex candadoContextos;
-shared Núcleo [cantidadNúcleos] núcleos;
+
 shared string [] hilillosFinalizados = [];
