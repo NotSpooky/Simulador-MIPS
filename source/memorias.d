@@ -2,7 +2,7 @@ module memorias;
 
 import std.conv        : to, text;
 import reloj           : relojazo, cicloActual;
-import nucleo          : Núcleo, cantidadNúcleos, rl, bloqueRL, otroRL, posOtroNúcleo;
+import nucleo          : Núcleo, cantidadNúcleos, rl, bloqueRL, otroRL, posOtroNúcleo, getRl;
 import core.sync.mutex : Mutex;
 import tui             : interfazDeUsuario;
 
@@ -98,7 +98,7 @@ class CachéL1 (TipoCaché tipoCaché) {
         /// Asigna un valor a memoria. 
         /// Usa de índice el número de palabra, no bloque ni byte.
         /// Usado para stores.
-        void opIndexAssign (palabra porColocar, uint índiceEnMemoria, bool esSC = false) {
+        void store (palabra porColocar, uint índiceEnMemoria, void delegate () acciónSiRLNoCoincide, bool esSC = false) {
             conseguirCandados ([this.candado]);
             scope (exit) liberarAlFinal (this.candado);
             // Se obtuvo la L1 de este núcleo.
@@ -106,12 +106,12 @@ class CachéL1 (TipoCaché tipoCaché) {
             mixin calcularPosiciones;
             auto bloqueBuscado = &this.bloques [numBloqueL1];
 
+            if (esSC && getRl != índiceEnMemoria) {
+                acciónSiRLNoCoincide ();
+                return;
+            }
             with (bloqueBuscado) {
 
-                // Le va a caer encima, si es el bloque del rl hay que invalidarlo.
-                if (válido && bloqueRL == bloqueEnMemoria) {
-                    rl = -1;
-                }
                 // Se revisa si está el dato en la caché para retornarlo.
                 if (modificado && bloqueEnMemoria == numBloqueMem) {
                     assert (válido);
@@ -119,6 +119,10 @@ class CachéL1 (TipoCaché tipoCaché) {
                     return;
                 }
 
+                // Le va a caer encima, si es el bloque del rl hay que invalidarlo.
+                if (válido && bloqueRL == bloqueEnMemoria) {
+                    rl = -1;
+                }
                 // No se encontró.
                 conseguirCandados ([this.candado, Candado.L2]);
                 // Se obtuvo la L2 y memoria.
@@ -318,7 +322,7 @@ enum Tipo {memoria, caché};
 struct Bloque (Tipo tipo) {
     static if (tipo == Tipo.memoria) {
         // Es memoria, se inicializa con 1s.
-        palabra [palabrasPorBloque] palabras = 0;
+        palabra [palabrasPorBloque] palabras = 1;
         alias palabras this; // Permite usar el operador de índice.
     } else {
         uint bloqueEnMemoria                 = 0;
