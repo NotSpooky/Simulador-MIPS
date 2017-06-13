@@ -43,6 +43,7 @@ final class Núcleo {
             contadorQuantum ++;
             if (contadorQuantum >= quantumEspecificadoPorUsuario) {
                 candadoContextos.lock;
+                rl = -1;
                 contextos ~= this.registros;
                 contadorQuantum = 0;
                 this.registros = contextos [0];
@@ -73,6 +74,7 @@ final class Núcleo {
                         , "\nCaché L1 de datos al final de ejecución: \n"
                         , bloques );
                     candadoContextos.lock;
+                    rl = -1;
                     if (!contextos.length) {
                         // Se acabó.
                         import reloj : Respuesta;
@@ -134,6 +136,7 @@ struct Registros {
     }
 }
 
+auto posOtroNúcleo () { return Núcleo.númeroNúcleo == 0 ? 1 : 0; }
 shared string [] hilillosFinalizados = [];
 __gshared Registros [] contextos = [];
 import core.thread : Mutex;
@@ -150,11 +153,17 @@ shared Mutex candadoContextos;
     atomicStore (rls [Núcleo.númeroNúcleo], newVal);
     candadosRLs [Núcleo.númeroNúcleo].unlock;
 }
-auto bloqueRL () {
-    candadosRLs [Núcleo.númeroNúcleo].lock; 
-    scope (exit) candadosRLs [Núcleo.númeroNúcleo].unlock;
-    return rls [Núcleo.númeroNúcleo] < 0 ? -1 
-        : rls [Núcleo.númeroNúcleo] / (palabrasPorBloque * bytesPorPalabra);
+@property void otroRL (palabra newVal) {
+    assert (candadosRLs [Núcleo.númeroNúcleo]);
+    candadosRLs [Núcleo.númeroNúcleo].lock;
+    atomicStore (rls [posOtroNúcleo], newVal);
+    candadosRLs [Núcleo.númeroNúcleo].unlock;
+}
+auto bloqueRL (uint numNúcleo = Núcleo.númeroNúcleo) {
+    candadosRLs [numNúcleo].lock; 
+    scope (exit) candadosRLs [numNúcleo].unlock;
+    return rls [numNúcleo] < 0 ? -1 
+        : rls [numNúcleo] / (palabrasPorBloque * bytesPorPalabra);
     }
 private shared palabra [cantidadNúcleos] rls = -1;
 private shared Mutex   [cantidadNúcleos] candadosRLs;

@@ -2,7 +2,7 @@ module memorias;
 
 import std.conv        : to, text;
 import reloj           : relojazo, cicloActual;
-import nucleo          : Núcleo, cantidadNúcleos, rl, bloqueRL;
+import nucleo          : Núcleo, cantidadNúcleos, rl, bloqueRL, otroRL, posOtroNúcleo;
 import core.sync.mutex : Mutex;
 import tui             : interfazDeUsuario;
 
@@ -67,7 +67,6 @@ class CachéL1 (TipoCaché tipoCaché) {
                 conseguirCandados ([this.candado, Candado.L2]);
                 // Se obtuvo la L2.
                 if (modificado) { 
-                    // Se tiene que escribir a memoria porque es write back.
                     assert (válido);
                     mandarAMemoria (bloqueBuscado);
                     assert (!válido);
@@ -106,7 +105,13 @@ class CachéL1 (TipoCaché tipoCaché) {
 
             mixin calcularPosiciones;
             auto bloqueBuscado = &this.bloques [numBloqueL1];
+
             with (bloqueBuscado) {
+
+                // Le va a caer encima, si es el bloque del rl hay que invalidarlo.
+                if (válido && bloqueRL == bloqueEnMemoria) {
+                    rl = -1;
+                }
                 // Se revisa si está el dato en la caché para retornarlo.
                 if (modificado && bloqueEnMemoria == numBloqueMem) {
                     assert (válido);
@@ -164,23 +169,33 @@ class CachéL1 (TipoCaché tipoCaché) {
 
     /// Retorna si el dato se recibió de la otra caché, si no se debe buscar
     /// en L2.
-    bool revisarEnOtraL1 (Bloque!(Tipo.caché) * bloqueBuscado, uint índiceEnMemoria, bool copiarSiModificado = false) {
+    bool revisarEnOtraL1 (Bloque!(Tipo.caché) * bloqueBuscado, uint índiceEnMemoria, bool esStore = false) {
         mixin calcularPosiciones;
         auto bloqueOtraL1 = &L1OtroNúcleo.bloques [numBloqueL1];
         bool porRetornar  = false;
         with (bloqueOtraL1) {
             auto otraLoTiene = bloqueEnMemoria == numBloqueMem;
-            if (otraLoTiene && modificado) {
-                assert (válido);
-                if (copiarSiModificado) {
+            
+            if (otraLoTiene && válido) {
+                if (esStore && bloqueRL (posOtroNúcleo) == bloqueEnMemoria) {
+                    // Se va a quitar del otro y es el bloque al que pertenece el RL.
+                    otroRL = -1;
+                }
+                if (esStore && modificado) { // Se trae del otro.
                     bloqueBuscado.bloqueEnMemoria = bloqueEnMemoria;
                     bloqueBuscado.palabras        = palabras;
                     bloqueBuscado.válido          = true;
-                    bloqueBuscado.modificado      = false;
+                    bloqueBuscado.modificado      = true;
                     porRetornar = true;
                 }
-                mandarAMemoria (bloqueOtraL1);
-                assert (!válido && !modificado);
+                if (modificado) {
+                    mandarAMemoria (bloqueOtraL1);
+                }
+                if (esStore) { 
+                    // El único que queda válido es este.
+                    válido = false;
+                }
+                assert (!modificado);
             }
         }
         return porRetornar;
@@ -244,7 +259,6 @@ class CachéL1 (TipoCaché tipoCaché) {
 
 }
 // Lista de candados por liberar al final del ciclo.
-private auto posOtroNúcleo () { return Núcleo.númeroNúcleo == 0 ? 1 : 0; }
 auto ref cachéL1Datos () { return cachésL1Datos [Núcleo.númeroNúcleo]; }
 auto ref L1OtroNúcleo () { return cachésL1Datos [posOtroNúcleo]; }
 
