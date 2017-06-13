@@ -139,7 +139,7 @@ __gshared Registros [] contextos = [];
 import core.thread : Mutex;
 shared Mutex candadoContextos;
 @property auto getRl (uint numNúcleo = Núcleo.númeroNúcleo) {
-    assert (numNúcleo < cantidadNúcleos);
+    assert (numNúcleo < candadosRLs.length);
     candadosRLs [numNúcleo].lock;
     scope (exit) candadosRLs [numNúcleo].unlock;
     return rls [numNúcleo];
@@ -147,7 +147,7 @@ shared Mutex candadoContextos;
 @property void rl (palabra newVal) {
     assert (candadosRLs [Núcleo.númeroNúcleo]);
     candadosRLs [Núcleo.númeroNúcleo].lock;
-    atomicStore (rls [Núcleo.númeroNúcleo], -1);
+    atomicStore (rls [Núcleo.númeroNúcleo], newVal);
     candadosRLs [Núcleo.númeroNúcleo].unlock;
 }
 auto bloqueRL () {
