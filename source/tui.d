@@ -84,10 +84,11 @@ class TUI {
         }
         finEscritura;
     }
-    import nucleo : Registros;
+    import nucleo : Registros, getRl;
     /// Los 32 registros normales, el RL y el PC.
     void actualizarRegistros (uint numNúcleo, Registros registrosRec) {
-        this.registros [numNúcleo] = registrosRec.to!string;
+        import std.format;
+        this.registros [numNúcleo] = registrosRec.to!string ~ format (`RL: %s`, getRl (numNúcleo));
     }
     /// Limpia la línea número numLínea y le escribe el mensaje.
     void escribirEn (T ...)(uint númeroDeLínea, T mensajes) {

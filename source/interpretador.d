@@ -129,9 +129,25 @@ static void interpretar (Núcleo núcleo, Instrucción instrucción) {
             // Stop stop stop stop.
             throw new ExcepciónDeFinDePrograma ();
         case Código.LL:
-            assert (0, `TO DO: LL`);
+            // Rx <-- Memoria (n + (Ry))
+            int Ry = núcleo.registros [rf1];
+            int posBase = Ry + inm;
+            assert ((posBase % bytesPorPalabra) == 0
+            /**/ , `LL no alineado: ` ~ posBase.to!string);
+            uint posición = (posBase / bytesPorPalabra).to!int;
+            assert (posición >= 0 && posición < 256, `Pos fuera de memoria.`);
+            núcleo.registros [rf2] = cachéL1Datos [posición, true];
+            break;
         case Código.SC:
-            assert (0, `TO DO: SC`);
+            // Memoria (n + (Ry)) <-- Rx 
+            int Rx = núcleo.registros [rf2];
+            int Ry = núcleo.registros [rf1];
+            int posBase = Ry + inm;
+            assert ((posBase % bytesPorPalabra) == 0, `SC no alineado: ` ~ posBase.to!string);
+            uint posición = (posBase / bytesPorPalabra).to!int;
+            assert (posición >= 0 && posición < 256);
+            cachéL1Datos [posición, true] = Rx;
+            break;
     }
 }
 

@@ -1,19 +1,20 @@
 module nucleo;
 
-import std.conv : text, to;
-import reloj : esperarTick, Respuesta, enviar, enviarMensajeDeInicio;
-import memorias : CachéL1Instrucciones, cachéL1Datos, bloqueFinInstrucciones, bloqueInicioInstrucciones, palabrasPorBloque, bytesPorPalabra;
+import std.conv    : text, to;
+import core.atomic : atomicStore;
+import reloj       : esperarTick, Respuesta, enviar, enviarMensajeDeInicio;
+import memorias    : CachéL1Instrucciones, cachéL1Datos, bloqueFinInstrucciones, bloqueInicioInstrucciones, palabrasPorBloque, bytesPorPalabra;
 
 static shared quantumEspecificadoPorUsuario = 1;
 
-alias palabra = uint;
+alias palabra = int;
 enum cantidadNúcleos = 2;
 final class Núcleo {
     this (uint númeroNúcleo /*Identificador*/) {
-        assert (númeroNúcleo >= 0 && númeroNúcleo < cantidadNúcleos);
+        scope (success) enviarMensajeDeInicio;
+        assert (númeroNúcleo < cantidadNúcleos);
         this.númeroNúcleo  = númeroNúcleo;
         cachéInstrucciones = new CachéL1Instrucciones ();
-        enviarMensajeDeInicio;
     }
     @disable this ();
     /// Cuando llega al especificado por el usuario, cambia contexto.
@@ -39,7 +40,6 @@ final class Núcleo {
         contextos = contextos [1..$];
         candadoContextos.unlock;
         while (true) {
-            import core.atomic;
             contadorQuantum ++;
             if (contadorQuantum >= quantumEspecificadoPorUsuario) {
                 candadoContextos.lock;
@@ -94,10 +94,9 @@ final class Núcleo {
 }
 
 /// Contiene un contexto. Los registros normales se accesan con el operador de
-/// [], el rl y contadorDePrograma con notación de punto (ejemplo regs.rl).
+/// [] y contadorDePrograma con notación de punto (ejemplo: regs.contadorDePrograma).
 struct Registros {
     palabra [32] registros =  0;
-    int          rl        = -1;
     /// Tiene el número de instrucción, no de bloque ni de byte.
     uint contadorDePrograma = -1; 
     /// Lleva cuántos ciclos lleva ejecutándose.
@@ -122,7 +121,6 @@ struct Registros {
         foreach (i, registro; registros) {
             sacar ( format (`R%d: %d `, i, registro) );
         }
-        sacar ( format (`RL: %d `, this.rl) );
     }
     alias registros this;
 
@@ -136,8 +134,27 @@ struct Registros {
     }
 }
 
+shared string [] hilillosFinalizados = [];
 __gshared Registros [] contextos = [];
 import core.thread : Mutex;
 shared Mutex candadoContextos;
-
-shared string [] hilillosFinalizados = [];
+@property auto getRl (uint numNúcleo = Núcleo.númeroNúcleo) {
+    assert (numNúcleo < cantidadNúcleos);
+    candadosRLs [numNúcleo].lock;
+    scope (exit) candadosRLs [numNúcleo].unlock;
+    return rls [numNúcleo];
+}
+@property void rl (palabra newVal) {
+    assert (candadosRLs [Núcleo.númeroNúcleo]);
+    candadosRLs [Núcleo.númeroNúcleo].lock;
+    atomicStore (rls [Núcleo.númeroNúcleo], -1);
+    candadosRLs [Núcleo.númeroNúcleo].unlock;
+}
+auto bloqueRL () {
+    candadosRLs [Núcleo.númeroNúcleo].lock; 
+    scope (exit) candadosRLs [Núcleo.númeroNúcleo].unlock;
+    return rls [Núcleo.númeroNúcleo] < 0 ? -1 
+        : rls [Núcleo.númeroNúcleo] / (palabrasPorBloque * bytesPorPalabra);
+    }
+private shared palabra [cantidadNúcleos] rls = -1;
+private shared Mutex   [cantidadNúcleos] candadosRLs;

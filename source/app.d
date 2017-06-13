@@ -1,7 +1,7 @@
 import std.concurrency : spawn, thisTid, OwnerTerminated;
 import tui             : TUI, interfazDeUsuario;
 import std.stdio       : writeln, readln;
-import nucleo          : Núcleo, quantumEspecificadoPorUsuario, hilillosFinalizados, candadoContextos;
+import nucleo          : Núcleo, quantumEspecificadoPorUsuario, hilillosFinalizados, candadoContextos, candadosRLs, cantidadNúcleos;
 
 void main (string [] args)
 {
@@ -22,6 +22,9 @@ void main (string [] args)
     interfazDeUsuario = new TUI   ();
     import core.thread : Mutex;
     candadoContextos  = new shared Mutex ();
+    foreach (i; 0..cantidadNúcleos) {
+        candadosRLs [i] = new shared Mutex ();
+    }
     auto tidNúcleo1 = spawn (&iniciarEjecución, últimoNumNúcleo ++);
     auto tidNúcleo2 = spawn (&iniciarEjecución, últimoNumNúcleo ++);
     interfazDeUsuario.actualizarMemoriaMostrada;

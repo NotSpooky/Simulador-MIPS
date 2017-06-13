@@ -3,7 +3,7 @@ module reloj;
 struct Tick {} /// Mensaje enviado a los núcleos para que empiecen un ciclo.
 
 import std.concurrency;
-import nucleo : Núcleo, Registros;
+import nucleo : Núcleo, Registros, cantidadNúcleos;
 /// Mensaje enviado desde los núcleos al reloj.
 struct Respuesta {
     /// Los tocks son ciclos normales, el Tipo es terminóEjecución cuando ya no
@@ -12,6 +12,7 @@ struct Respuesta {
 
     this (Tipo tipo) {
         this.tipo         = tipo;
+        assert (Núcleo.númeroNúcleo < cantidadNúcleos);
         this.númeroNúcleo = Núcleo.númeroNúcleo;
         // Se aumenta el contador del hilillo.
         Núcleo.registros.contadorCiclos ++;

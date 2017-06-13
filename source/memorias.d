@@ -2,7 +2,7 @@ module memorias;
 
 import std.conv        : to, text;
 import reloj           : relojazo, cicloActual;
-import nucleo          : Núcleo, cantidadNúcleos;
+import nucleo          : Núcleo, cantidadNúcleos, rl, bloqueRL;
 import core.sync.mutex : Mutex;
 import tui             : interfazDeUsuario;
 
@@ -38,10 +38,15 @@ class CachéL1 (TipoCaché tipoCaché) {
 
     /// Implementa el Load word.
     /// Se indexa igual que la memoria, pero índice es por palabra, no por bloque.
-    auto opIndex (uint índiceEnMemoria) {
+    auto opIndex (uint índiceEnMemoria, bool esLL = false) {
         static if (tipoCaché == TipoCaché.datos) {
             conseguirCandados ([this.candado]);
-            scope (exit) liberarAlFinal (this.candado);
+            scope (exit) {
+                liberarAlFinal (this.candado);
+                if (esLL) {
+                    rl = índiceEnMemoria;
+                }
+            }
         }
         // Se obtuvo la L1 de este núcleo.
 
@@ -51,6 +56,10 @@ class CachéL1 (TipoCaché tipoCaché) {
         with (bloqueBuscado) { // Se encontró en la caché y está válido.
             if (válido && bloqueEnMemoria == numBloqueMem) {
                 return (*bloqueBuscado) [numPalabra];
+            }
+            // Le va a caer encima, si es el bloque del rl hay que invalidarlo.
+            if (válido && bloqueRL == bloqueEnMemoria) {
+                rl = -1;
             }
 
             // No se encontró.
@@ -90,7 +99,7 @@ class CachéL1 (TipoCaché tipoCaché) {
         /// Asigna un valor a memoria. 
         /// Usa de índice el número de palabra, no bloque ni byte.
         /// Usado para stores.
-        void opIndexAssign (palabra porColocar, uint índiceEnMemoria) {
+        void opIndexAssign (palabra porColocar, uint índiceEnMemoria, bool esSC = false) {
             conseguirCandados ([this.candado]);
             scope (exit) liberarAlFinal (this.candado);
             // Se obtuvo la L1 de este núcleo.
@@ -134,6 +143,7 @@ class CachéL1 (TipoCaché tipoCaché) {
 
     private:
 
+    
     /// Retorna un bloque de caché L2 para ponerlo en una L1 de datos.
     auto traerDeL2 (uint numBloqueMem) {
         foreach (i; 0..ciclosBloqueL2L1) {
@@ -294,7 +304,7 @@ enum Tipo {memoria, caché};
 struct Bloque (Tipo tipo) {
     static if (tipo == Tipo.memoria) {
         // Es memoria, se inicializa con 1s.
-        palabra [palabrasPorBloque] palabras = 1;
+        palabra [palabrasPorBloque] palabras = 0;
         alias palabras this; // Permite usar el operador de índice.
     } else {
         uint bloqueEnMemoria                 = 0;
