@@ -89,8 +89,8 @@ auto preguntarPorHilillos () {
     assert (posInicialesHilillos.length > 1);
     import nucleo : Registros, contextos;
     // El último no importa, solo las posiciones iniciales.
-    foreach (i, posInicial; posInicialesHilillos [0..$-1]) {
-        contextos ~= Registros (posInicial, archivosSel [i]);
+    foreach (uint i, posInicial; posInicialesHilillos [0..$-1]) {
+        contextos ~= Registros (posInicial, archivosSel [i], i);
     }
 }
 /// Retorna el archivo leído como un arreglo de palabras;

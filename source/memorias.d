@@ -44,7 +44,7 @@ class CachéL1 (TipoCaché tipoCaché) {
             scope (exit) {
                 liberarAlFinal (this.candado);
                 if (esLL) {
-                    rl = índiceEnMemoria;
+                    rl = índiceEnMemoria * bytesPorPalabra;
                 }
             }
         }
@@ -98,7 +98,8 @@ class CachéL1 (TipoCaché tipoCaché) {
         /// Asigna un valor a memoria. 
         /// Usa de índice el número de palabra, no bloque ni byte.
         /// Usado para stores.
-        void store (palabra porColocar, uint índiceEnMemoria, void delegate () acciónSiRLNoCoincide, bool esSC = false) {
+        void store (palabra porColocar, uint índiceEnMemoria, void delegate () acciónSiRLNoCoincide = null, bool esSC = false) {
+            assert ((acciónSiRLNoCoincide == null) ^ esSC, `Solo debe enviarse acciónSiRLNoCoincide si es SC.`);
             conseguirCandados ([this.candado]);
             scope (exit) liberarAlFinal (this.candado);
             // Se obtuvo la L1 de este núcleo.
@@ -106,9 +107,15 @@ class CachéL1 (TipoCaché tipoCaché) {
             mixin calcularPosiciones;
             auto bloqueBuscado = &this.bloques [numBloqueL1];
 
-            if (esSC && getRl != índiceEnMemoria) {
+            if (esSC && getRl != (índiceEnMemoria * bytesPorPalabra)) {
+                import std.file, std.conv;
+                `oveja.txt`.append (text("SC fail, ", índiceEnMemoria * bytesPorPalabra, ", núcleo: ", Núcleo.númeroNúcleo, '\n'));
                 acciónSiRLNoCoincide ();
                 return;
+            }
+            if (esSC) {
+                import std.file, std.conv;
+                `oveja.txt`.append (text("SC exitoso, ", índiceEnMemoria * bytesPorPalabra, ", núcleo: ", Núcleo.númeroNúcleo, ` Hilillo: `, Núcleo.registros.númeroHilillo,'\n'));
             }
             with (bloqueBuscado) {
 

@@ -105,9 +105,11 @@ struct Registros {
     uint contadorCiclos     =  0;
     /// Identificador.
     string programaFuente   = "";
-    @safe @nogc this (uint contadorDePrograma, string programaFuente) {
+    uint   númeroHilillo    = -1;
+    @safe @nogc this (uint contadorDePrograma, string programaFuente, uint númeroHilillo) {
         this.contadorDePrograma = contadorDePrograma;
         this.programaFuente     = programaFuente;
+        this.númeroHilillo      = númeroHilillo;
     }
     /// Escribir a la posición 0 no es válido.
     void opIndexAssign (palabra nuevoVal, uint posición) {
@@ -155,9 +157,9 @@ shared Mutex candadoContextos;
 }
 @property void otroRL (palabra newVal) {
     assert (candadosRLs [Núcleo.númeroNúcleo]);
-    candadosRLs [Núcleo.númeroNúcleo].lock;
+    candadosRLs [posOtroNúcleo].lock;
     atomicStore (rls [posOtroNúcleo], newVal);
-    candadosRLs [Núcleo.númeroNúcleo].unlock;
+    candadosRLs [posOtroNúcleo].unlock;
 }
 auto bloqueRL (uint numNúcleo = Núcleo.númeroNúcleo) {
     candadosRLs [numNúcleo].lock; 

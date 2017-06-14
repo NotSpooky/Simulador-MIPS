@@ -123,7 +123,7 @@ static void interpretar (Núcleo núcleo, Instrucción instrucción) {
             assert ((posBase % bytesPorPalabra) == 0, `SW no alineado: ` ~ posBase.to!string);
             uint posición = (posBase / bytesPorPalabra).to!int;
             assert (posición >= 0 && posición < 256);
-            cachéL1Datos.store(Rx, posición, () {});
+            cachéL1Datos.store(Rx, posición);
             break;
         case Código.FIN:
             // Stop stop stop stop.
