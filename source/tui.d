@@ -153,6 +153,10 @@ class TUI {
             escribirEn (líneaInstruccionesUsuario + 2, ""); // Lo limpia.
             this.modoAvance = ModoAvance.manual;
         }
+        if (this.modoAvance != ModoAvance.manual && entrada.kbhit) {
+            // Se recibió algo en modo continuo/rápido, mejor parar.
+            this.modoAvance = ModoAvance.manual;
+        }
         this.actualizarMemoriaMostrada;
         this.actualizarRegistrosMostrados;
         if (this.modoAvance == ModoAvance.manual) {
