@@ -5,7 +5,7 @@ enum tamañoMarco                =  2;
 // Debe haber espacio a la izquierda y arriba para el marco y direcciones de memoria.
 enum ubicaciónDeMemoria         = [7,1]; 
 enum cantidadLineasMemoria      = 16;
-import nucleo : cantidadNúcleos;
+import nucleo : cantidadNúcleos, Núcleo;
 // Ubicación del margen superior izquierdo de la primer tabla de registros.
 enum líneaRegistros             = ubicaciónDeMemoria [1] + cantidadLineasMemoria 
                                  + tamañoMarco
@@ -24,7 +24,7 @@ enum líneaSalidaEstándar        = líneaSalidaNúcleos
                                  + (lineasSalidaPorNúcleo * cantidadNúcleos) 
                                  + 1; //Siguiente.
 
-import memorias   : palabra, palabrasPorBloque, memoriaPrincipal, bytesPorPalabra;
+import memorias   : palabra, palabrasPorBloque, memoriaPrincipal, bytesPorPalabra, cachésL1Datos;
 import std.traits : isUnsigned;
 import std.conv   : to, text;
 enum tamañoPalabra = palabra.min.to!string.length.to!uint;
@@ -39,18 +39,7 @@ class TUI {
         terminal = Terminal (ConsoleOutputType.linear);
         entrada  = RealTimeConsoleInput (&terminal, ConsoleInputFlags.raw);
         terminal.setTitle ("Simulador de MIPS");
-        terminal.clear;
-        // UFCS
-        escribirCentradoEn (líneaTítulo, "Simulador de MIPS");
-        ponerMarcoMemoria;
-        mostrarInstruccionesUsuario;
-        foreach (numNúcleo; 0..cantidadNúcleos) {
-            terminal.color (Color.red, Color.DEFAULT);
-            escribirEn (líneaRegistros + ((tamañoMarco + 1) * numNúcleo), "Núcleo #", numNúcleo, ':');
-            escribirEn (líneaSalidaNúcleos + (lineasSalidaPorNúcleo * numNúcleo), "Núcleo #", numNúcleo, ':');
-            terminal.color (Color.DEFAULT, Color.DEFAULT);
-        }
-        this.finEscritura;
+        ponerInformaciónEstática;
     }
     /// Se debe llamar al final de realizar writes o moveTo en la terminal.
     void finEscritura () {
@@ -112,7 +101,6 @@ class TUI {
     }
 
     private const líneaMensajeInstrucción () {
-        import nucleo : Núcleo;
         return líneaSalidaNúcleos + (Núcleo.númeroNúcleo * lineasSalidaPorNúcleo) + 1;
     }
 
@@ -122,10 +110,19 @@ class TUI {
         if (this.modoAvance == ModoAvance.rápido) return;
         lock.lock ();
         scope (exit) lock.unlock ();
+        import std.conv : text;
+        mensajesInstrucción [Núcleo.númeroNúcleo] = text (mensaje);
         escribirEn (líneaMensajeInstrucción, mensaje);
         escribirEn (líneaMensajeInstrucción + 1, ""); // limpia la otra.
     }
-
+    /// Vuelve a mostrar las instrucciones, para cuando se limpia
+    /// la interfaz.
+    void mostrarInstrucciones () {
+        foreach (i; 0..mensajesInstrucción.length) {
+            escribirEn ((líneaSalidaNúcleos + (i * lineasSalidaPorNúcleo) +1).to!uint, mensajesInstrucción [i]);
+        }
+    }
+    private shared string [cantidadNúcleos] mensajesInstrucción;
     /// Coloca un mensaje en la posición correspondiente al número de núcleo 
     /// de este hilo.
     void mostrar (T...)(T mensaje) {
@@ -157,8 +154,7 @@ class TUI {
             // Se recibió algo en modo continuo/rápido, mejor parar.
             this.modoAvance = ModoAvance.manual;
         }
-        this.actualizarMemoriaMostrada;
-        this.actualizarRegistrosMostrados;
+        this.actualizarInterfazDinámica;
         if (this.modoAvance == ModoAvance.manual) {
             ObtenerEntradas: while (true) {
                 auto leido = entrada.getch;
@@ -183,6 +179,9 @@ class TUI {
                         // Muestra posiciones más grandes de memoria.
                         this.moverMemoriaAbajo;
                         break;
+                    case 'm':
+                        this.mostrarL1s;
+                        break;
                     case 'z':
                         if (this.posInicialRegistros > 13) {
                             this.posInicialRegistros -= 14;
@@ -200,6 +199,10 @@ class TUI {
                 this.finEscritura;
             }
         }
+    }
+    private void actualizarInterfazDinámica () {
+        this.actualizarMemoriaMostrada;
+        this.actualizarRegistrosMostrados;
     }
     /// Número de fila que se presenta de la memoria en la pantalla.
     /// El byte correspondiente depende del ancho de la terminal.
@@ -226,6 +229,38 @@ class TUI {
             ponerMarcoMemoria;
             actualizarMemoriaMostrada;
         }
+    }
+    private void ponerInformaciónEstática () {
+        terminal.clear;
+        escribirCentradoEn (líneaTítulo, "Simulador de MIPS");
+        ponerMarcoMemoria;
+        mostrarInstruccionesUsuario;
+        foreach (numNúcleo; 0..cantidadNúcleos) {
+            terminal.color (Color.red, Color.DEFAULT);
+            escribirEn (líneaRegistros + ((tamañoMarco + 1) * numNúcleo), "Núcleo #", numNúcleo, ':');
+            escribirEn (líneaSalidaNúcleos + (lineasSalidaPorNúcleo * numNúcleo), "Núcleo #", numNúcleo, ':');
+            terminal.color (Color.DEFAULT, Color.DEFAULT);
+        }
+        finEscritura;
+    }
+    private void mostrarL1s () {
+        terminal.clear;
+        terminal.moveTo (0,0);
+        foreach (i, cachéL1Datos; cachésL1Datos) {
+            terminal.color (Color.red, Color.DEFAULT);
+            terminal.writeln (`Caché L1 de datos del núcleo `, i, ":\n\n");
+            terminal.color (Color.DEFAULT, Color.DEFAULT);
+            foreach (bloque; cachéL1Datos.bloques) {
+                terminal.writeln (bloque);
+            }
+        }
+        terminal.writeln ();
+        terminal.flush;
+        // Se vuelve a la interfaz normal.
+        entrada.getch;
+        this.ponerInformaciónEstática;
+        this.actualizarInterfazDinámica;
+        this.mostrarInstrucciones;
     }
     /// Actualiza en la pantalla los registros a partir de la posición
     /// de posInicialRegistros.

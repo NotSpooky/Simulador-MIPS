@@ -407,6 +407,8 @@ auto memoriaPrincipalEnPalabras () {
 }
 
 auto log (T...)(uint indentación, T args) {
+    /+
     import std.file, std.conv, std.range;
     `../oveja.txt`.append (text(' '.repeat (indentación * 2), `Hilillo `, Núcleo.registros.númeroHilillo, " en núcleo ", Núcleo.númeroNúcleo, `: `, args, '\n'));
+    +/
 }
