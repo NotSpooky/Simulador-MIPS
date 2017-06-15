@@ -156,12 +156,12 @@ shared Mutex candadoContextos;
     candadosRLs [Núcleo.númeroNúcleo].unlock;
 }
 @property void otroRL (palabra newVal) {
-    assert (candadosRLs [Núcleo.númeroNúcleo]);
+    assert (candadosRLs [posOtroNúcleo]);
     candadosRLs [posOtroNúcleo].lock;
     atomicStore (rls [posOtroNúcleo], newVal);
     candadosRLs [posOtroNúcleo].unlock;
 }
-auto bloqueRL (uint numNúcleo = Núcleo.númeroNúcleo) {
+int bloqueRL (uint numNúcleo = Núcleo.númeroNúcleo) {
     candadosRLs [numNúcleo].lock; 
     scope (exit) candadosRLs [numNúcleo].unlock;
     return rls [numNúcleo] < 0 ? -1 

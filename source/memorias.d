@@ -44,6 +44,7 @@ class CachéL1 (TipoCaché tipoCaché) {
             scope (exit) {
                 liberarAlFinal (this.candado);
                 if (esLL) {
+                    log (0, `LL: escribiendo RL = `, índiceEnMemoria * bytesPorPalabra);
                     rl = índiceEnMemoria * bytesPorPalabra;
                 }
             }
@@ -55,10 +56,12 @@ class CachéL1 (TipoCaché tipoCaché) {
         auto bloqueBuscado = &this.bloques [numBloqueL1];
         with (bloqueBuscado) { // Se encontró en la caché y está válido.
             if (válido && bloqueEnMemoria == numBloqueMem) {
+                static if (tipoCaché == TipoCaché.datos) log (1, `Leyendo de la propia caché L1`);
                 return (*bloqueBuscado) [numPalabra];
             }
             // Le va a caer encima, si es el bloque del rl hay que invalidarlo.
             if (válido && bloqueRL == bloqueEnMemoria) {
+                log (0, `Cayendo encima a bloque de RL, trayendo `, índiceEnMemoria * bytesPorPalabra);
                 rl = -1;
             }
 
@@ -108,47 +111,63 @@ class CachéL1 (TipoCaché tipoCaché) {
             auto bloqueBuscado = &this.bloques [numBloqueL1];
 
             if (esSC && getRl != (índiceEnMemoria * bytesPorPalabra)) {
-                import std.file, std.conv;
-                `oveja.txt`.append (text("SC fail, ", índiceEnMemoria * bytesPorPalabra, ", núcleo: ", Núcleo.númeroNúcleo, '\n'));
+                log(0, "SC fail, ", índiceEnMemoria * bytesPorPalabra, ` val = `, porColocar);
                 acciónSiRLNoCoincide ();
                 return;
             }
             if (esSC) {
-                import std.file, std.conv;
-                `oveja.txt`.append (text("SC exitoso, ", índiceEnMemoria * bytesPorPalabra, ", núcleo: ", Núcleo.númeroNúcleo, ` Hilillo: `, Núcleo.registros.númeroHilillo,'\n'));
+                log (0, `SC exitoso, `, índiceEnMemoria * bytesPorPalabra, ` val escrito = `, porColocar);
+            } else {
+                log (0, `Store en `, índiceEnMemoria * bytesPorPalabra, ` val = `, porColocar);
             }
             with (bloqueBuscado) {
 
                 // Se revisa si está el dato en la caché para retornarlo.
                 if (modificado && bloqueEnMemoria == numBloqueMem) {
                     assert (válido);
+                    log (1, `Se tiene el bloque modificado, escribiendo ahí`);
                     (*bloqueBuscado)[numPalabra] = porColocar;
                     return;
                 }
-
-                // Le va a caer encima, si es el bloque del rl hay que invalidarlo.
-                if (válido && bloqueRL == bloqueEnMemoria) {
-                    rl = -1;
-                }
+                
                 // No se encontró.
                 conseguirCandados ([this.candado, Candado.L2]);
                 // Se obtuvo la L2 y memoria.
                 if (modificado) { 
+                    assert (bloqueEnMemoria != numBloqueMem);
                     // Se tiene que escribir a memoria porque es write back.
                     assert (válido, `bloqueBuscado no es válido.`);
+                    if (bloqueRL == bloqueEnMemoria) {
+                        // Le va a caer encima, si es el bloque del rl hay que invalidarlo.
+                        log (1, `Invalidando bloque local del RL`);
+                        rl = -1;
+                    } else {
+                        log (1, `Invalidando bloque `, bloqueEnMemoria, `, no es el del RL (`, bloqueRL, `)`);
+                    }
                     mandarAMemoria (bloqueBuscado);
                 }
-
+                assert (!modificado);
                 // Se tiene el bloque libre para traerlo.
                 // Se intenta conseguir la otra L1 para ver si tiene el dato (snooping).
                 conseguirCandados ([this.candado, Candado.L2, candadoDeLaOtraL1]);
                 if ( ! revisarEnOtraL1 (bloqueBuscado, numBloqueMem, true) ) {
-                    (*bloqueBuscado) = traerDeL2 (numBloqueMem);
+                    // La otra L1 no se lo pasó y ya invalidó el bloque si
+                    // corresponde.
+                    // Si esta lo tiene solo se invalida de L2, si no se
+                    // trae de ahí.
+                    if (bloqueEnMemoria == numBloqueMem && válido) {
+                        assert (!modificado);
+                    } else {
+                        log (1, `Trayendo bloque `, numBloqueMem, ` de L2/mem`);
+                        (*bloqueBuscado) = traerDeL2 (numBloqueMem);
+                        assert (válido);
+                    }
+                    modificado = true;
                 } else {
-                    assert (válido, `A la oveja`);
+                    assert (válido && modificado, `A la oveja`);
                 }
                 liberarAlFinal (candadoDeLaOtraL1);
-                assert (válido, `Retornando bloque inválido: ` ~ (*bloqueBuscado).to!string);
+                assert (válido && modificado, `Usando bloque inválido: ` ~ (*bloqueBuscado).to!string);
                 (*bloqueBuscado) [numPalabra] = porColocar;
                 cachéL2.invalidar (numBloqueMem);
                 liberarAlFinal (Candado.L2);
@@ -182,24 +201,43 @@ class CachéL1 (TipoCaché tipoCaché) {
     /// en L2.
     bool revisarEnOtraL1 (Bloque!(Tipo.caché) * bloqueBuscado, uint índiceEnMemoria, bool esStore = false) {
         mixin calcularPosiciones;
-        auto bloqueOtraL1 = &L1OtroNúcleo.bloques [numBloqueL1];
+        auto bloqueOtraL1 = &(L1OtroNúcleo.bloques [numBloqueL1]);
         bool porRetornar  = false;
         with (bloqueOtraL1) {
             auto otraLoTiene = bloqueEnMemoria == numBloqueMem;
+            assert ((bloqueBuscado.bloqueEnMemoria != bloqueEnMemoria)
+            /**/ || (! bloqueBuscado.modificado) || (! modificado));
             
             if (otraLoTiene && válido) {
                 if (esStore && bloqueRL (posOtroNúcleo) == bloqueEnMemoria) {
+                    log (1, `Invalidando el RL en la otra caché: Este es store`);
                     // Se va a quitar del otro y es el bloque al que pertenece el RL.
                     otroRL = -1;
                 }
                 if (esStore && modificado) { // Se trae del otro.
+                    if (bloqueBuscado.válido) {
+                        assert (bloqueBuscado.bloqueEnMemoria != bloqueEnMemoria);
+                        if (bloqueBuscado.bloqueEnMemoria == bloqueRL) {
+                            // Se le va a caer encima.
+                            log (1, `Invalidando RL local, le va a caer encima de la otra`);
+                            rl = -1;
+                        } else {
+                            log (1, `Trayendo de la otra L1 bloque que va a sobreescribir uno (`, bloqueBuscado.bloqueEnMemoria, `) que no es el de RL (`, bloqueRL,`)`);
+                        }
+                    }
                     bloqueBuscado.bloqueEnMemoria = bloqueEnMemoria;
                     bloqueBuscado.palabras        = palabras;
                     bloqueBuscado.válido          = true;
                     bloqueBuscado.modificado      = true;
                     porRetornar = true;
+                    log (1, `Sobreescrito con el bloque: `, bloqueEnMemoria);
                 }
                 if (modificado) {
+                    if (bloqueEnMemoria == bloqueRL (posOtroNúcleo)) {
+                        log (1, `Invalidando el RL en la otra caché: está modificado`);
+                        otroRL = -1;
+                    }
+                    log (1, `Mandando a memoria bloque modificado de la otra: `, bloqueEnMemoria);
                     mandarAMemoria (bloqueOtraL1);
                 }
                 if (esStore) { 
@@ -366,4 +404,9 @@ struct Bloque (Tipo tipo) {
 auto memoriaPrincipalEnPalabras () {
     import std.algorithm;
     return memoriaPrincipal.reduce!`a ~ b`;
+}
+
+auto log (T...)(uint indentación, T args) {
+    import std.file, std.conv, std.range;
+    `../oveja.txt`.append (text(' '.repeat (indentación * 2), `Hilillo `, Núcleo.registros.númeroHilillo, " en núcleo ", Núcleo.númeroNúcleo, `: `, args, '\n'));
 }
