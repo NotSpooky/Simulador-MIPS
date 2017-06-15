@@ -79,8 +79,8 @@ class CachéL1 (TipoCaché tipoCaché) {
                 // Se intenta conseguir la otra L1 para ver si tiene el dato (snooping).
                 conseguirCandados ([this.candado, Candado.L2, candadoDeLaOtraL1]);
                 revisarEnOtraL1 (bloqueBuscado, índiceEnMemoria);
-                liberarAlFinal (candadoDeLaOtraL1);
                 (*bloqueBuscado) = traerDeL2 (numBloqueMem);
+                liberarAlFinal (candadoDeLaOtraL1);
                 liberarAlFinal (Candado.L2);
             } else { // Es de instrucciones, va directo a mem.
                 conseguirCandados ([Candado.instrucciones]);
@@ -150,7 +150,7 @@ class CachéL1 (TipoCaché tipoCaché) {
                 // Se tiene el bloque libre para traerlo.
                 // Se intenta conseguir la otra L1 para ver si tiene el dato (snooping).
                 conseguirCandados ([this.candado, Candado.L2, candadoDeLaOtraL1]);
-                if ( ! revisarEnOtraL1 (bloqueBuscado, numBloqueMem, true) ) {
+                if ( ! revisarEnOtraL1 (bloqueBuscado, índiceEnMemoria, true) ) {
                     // La otra L1 no se lo pasó y ya invalidó el bloque si
                     // corresponde.
                     // Si esta lo tiene solo se invalida de L2, si no se
@@ -166,10 +166,10 @@ class CachéL1 (TipoCaché tipoCaché) {
                 } else {
                     assert (válido && modificado, `A la oveja`);
                 }
-                liberarAlFinal (candadoDeLaOtraL1);
                 assert (válido && modificado, `Usando bloque inválido: ` ~ (*bloqueBuscado).to!string);
                 (*bloqueBuscado) [numPalabra] = porColocar;
                 cachéL2.invalidar (numBloqueMem);
+                liberarAlFinal (candadoDeLaOtraL1);
                 liberarAlFinal (Candado.L2);
                 return;
             }
@@ -216,6 +216,7 @@ class CachéL1 (TipoCaché tipoCaché) {
                 }
                 if (esStore && modificado) { // Se trae del otro.
                     if (bloqueBuscado.válido) {
+                        assert (!bloqueBuscado.modificado);
                         assert (bloqueBuscado.bloqueEnMemoria != bloqueEnMemoria);
                         if (bloqueBuscado.bloqueEnMemoria == bloqueRL) {
                             // Se le va a caer encima.
@@ -232,7 +233,7 @@ class CachéL1 (TipoCaché tipoCaché) {
                     porRetornar = true;
                     log (1, `Sobreescrito con el bloque: `, bloqueEnMemoria);
                 }
-                if (modificado) {
+                if (bloqueOtraL1.modificado) {
                     if (bloqueEnMemoria == bloqueRL (posOtroNúcleo)) {
                         log (1, `Invalidando el RL en la otra caché: está modificado`);
                         otroRL = -1;
@@ -242,9 +243,9 @@ class CachéL1 (TipoCaché tipoCaché) {
                 }
                 if (esStore) { 
                     // El único que queda válido es este.
-                    válido = false;
+                    bloqueOtraL1.válido = false;
                 }
-                assert (!modificado);
+                assert (!bloqueOtraL1.modificado);
             }
         }
         return porRetornar;
@@ -308,8 +309,8 @@ class CachéL1 (TipoCaché tipoCaché) {
 
 }
 // Lista de candados por liberar al final del ciclo.
-auto ref cachéL1Datos () { return cachésL1Datos [Núcleo.númeroNúcleo]; }
-auto ref L1OtroNúcleo () { return cachésL1Datos [posOtroNúcleo]; }
+auto cachéL1Datos () { return &(cachésL1Datos [Núcleo.númeroNúcleo]); }
+auto L1OtroNúcleo () { return &(cachésL1Datos [posOtroNúcleo]); }
 
 class CachéL2 {
     /// Retorna el bloque correspondiente al númeroBloqueEnMemoria.

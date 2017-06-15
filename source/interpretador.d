@@ -115,7 +115,7 @@ static void interpretar (Núcleo núcleo, Instrucción instrucción) {
             uint posición = (posBase / bytesPorPalabra).to!int;
             assert (posición >= 0 && posición < 256, `Pos fuera de memoria.`);
             log (0, `Load normal en `, posición * 4);
-            núcleo.registros [rf2] = cachéL1Datos [posición];
+            núcleo.registros [rf2] = (*cachéL1Datos) [posición];
             log (2, `Leído `, núcleo.registros [rf2]);
             break;
         case Código.SW:
@@ -141,7 +141,7 @@ static void interpretar (Núcleo núcleo, Instrucción instrucción) {
             uint posición = (posBase / bytesPorPalabra).to!int;
             assert (posición >= 0 && posición < 256, `Pos fuera de memoria.`);
             log (0, `LL en `, posición * 4);
-            núcleo.registros [rf2] = cachéL1Datos [posición, true];
+            núcleo.registros [rf2] = (*cachéL1Datos) [posición, true];
             log (2, `Leido en LL val = `, núcleo.registros [rf2]);
             break;
         case Código.SC:
