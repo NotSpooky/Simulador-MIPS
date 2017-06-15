@@ -78,6 +78,7 @@ class TUI {
     void actualizarRegistros (uint numNúcleo, Registros registrosRec) {
         import std.format;
         this.registros [numNúcleo] = registrosRec.to!string ~ format (`RL: %s`, getRl (numNúcleo));
+        this.hilillos [numNúcleo] = registrosRec.númeroHilillo;
     }
     /// Limpia la línea número numLínea y le escribe el mensaje.
     void escribirEn (T ...)(uint númeroDeLínea, T mensajes) {
@@ -211,6 +212,7 @@ class TUI {
     private uint posInicialRegistros           = 0;
     /// Mensaje por mostrar en los registros de cada núcleo.
     private string [cantidadNúcleos] registros = [``,``];
+    private uint   [cantidadNúcleos] hilillos  = [-1, -1];
     /// Continuo no se interrumpe pero muestra la información,
     /// Manual es paso por paso,
     /// Rápido solo muestra hasta el final.
@@ -278,6 +280,7 @@ class TUI {
                 this.posInicialRegistros = 0;
             }
             escribirEn (líneaPorUsar, porMostrar [this.posInicialRegistros .. $]);
+            escribirEn (líneaPorUsar + 1, `Hilillo `, hilillos [numNúcleo]);
         }
         this.finEscritura;
     }
