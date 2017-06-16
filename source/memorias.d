@@ -41,12 +41,16 @@ class CachéL1 (TipoCaché tipoCaché) {
     auto opIndex (uint índiceEnMemoria, bool esLL = false) {
         static if (tipoCaché == TipoCaché.datos) {
             conseguirCandados ([this.candado]);
+            conseguirCandados ([this.candado, Candado.L2]);
+            conseguirCandados ([this.candado, Candado.L2, candadoDeLaOtraL1]);
             scope (exit) {
-                liberarAlFinal (this.candado);
                 if (esLL) {
                     log (0, `LL: escribiendo RL = `, índiceEnMemoria * bytesPorPalabra);
                     rl = índiceEnMemoria * bytesPorPalabra;
                 }
+                liberarAlFinal (this.candado);
+                liberarAlFinal (candadoDeLaOtraL1);
+                liberarAlFinal (Candado.L2);
             }
         }
         // Se obtuvo la L1 de este núcleo.
@@ -67,7 +71,6 @@ class CachéL1 (TipoCaché tipoCaché) {
 
             // No se encontró.
             static if (tipoCaché == TipoCaché.datos) { // Se usa snooping y L2.
-                conseguirCandados ([this.candado, Candado.L2]);
                 // Se obtuvo la L2.
                 if (modificado) { 
                     assert (válido);
@@ -77,11 +80,8 @@ class CachéL1 (TipoCaché tipoCaché) {
 
                 // Se tiene el bloque libre para traerlo.
                 // Se intenta conseguir la otra L1 para ver si tiene el dato (snooping).
-                conseguirCandados ([this.candado, Candado.L2, candadoDeLaOtraL1]);
                 revisarEnOtraL1 (bloqueBuscado, índiceEnMemoria);
                 (*bloqueBuscado) = traerDeL2 (numBloqueMem);
-                liberarAlFinal (candadoDeLaOtraL1);
-                liberarAlFinal (Candado.L2);
             } else { // Es de instrucciones, va directo a mem.
                 conseguirCandados ([Candado.instrucciones]);
                 // Se trae de memoria.
@@ -104,7 +104,13 @@ class CachéL1 (TipoCaché tipoCaché) {
         void store (palabra porColocar, uint índiceEnMemoria, void delegate () acciónSiRLNoCoincide = null, bool esSC = false) {
             assert ((acciónSiRLNoCoincide == null) ^ esSC, `Solo debe enviarse acciónSiRLNoCoincide si es SC.`);
             conseguirCandados ([this.candado]);
-            scope (exit) liberarAlFinal (this.candado);
+            conseguirCandados ([this.candado, Candado.L2]);
+            conseguirCandados ([this.candado, Candado.L2, candadoDeLaOtraL1]);
+            scope (exit) {
+                liberarAlFinal (this.candado);
+                liberarAlFinal (candadoDeLaOtraL1);
+                liberarAlFinal (Candado.L2);
+            }
             // Se obtuvo la L1 de este núcleo.
 
             mixin calcularPosiciones;
@@ -131,7 +137,6 @@ class CachéL1 (TipoCaché tipoCaché) {
                 }
                 
                 // No se encontró.
-                conseguirCandados ([this.candado, Candado.L2]);
                 // Se obtuvo la L2 y memoria.
                 if (modificado) { 
                     assert (bloqueEnMemoria != numBloqueMem);
@@ -149,7 +154,6 @@ class CachéL1 (TipoCaché tipoCaché) {
                 assert (!modificado);
                 // Se tiene el bloque libre para traerlo.
                 // Se intenta conseguir la otra L1 para ver si tiene el dato (snooping).
-                conseguirCandados ([this.candado, Candado.L2, candadoDeLaOtraL1]);
                 if ( ! revisarEnOtraL1 (bloqueBuscado, índiceEnMemoria, true) ) {
                     // La otra L1 no se lo pasó y ya invalidó el bloque si
                     // corresponde.
@@ -169,8 +173,6 @@ class CachéL1 (TipoCaché tipoCaché) {
                 assert (válido && modificado, `Usando bloque inválido: ` ~ (*bloqueBuscado).to!string);
                 (*bloqueBuscado) [numPalabra] = porColocar;
                 cachéL2.invalidar (numBloqueMem);
-                liberarAlFinal (candadoDeLaOtraL1);
-                liberarAlFinal (Candado.L2);
                 return;
             }
         }
