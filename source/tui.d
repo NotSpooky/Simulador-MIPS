@@ -30,7 +30,11 @@ import std.conv   : to, text;
 enum tamañoPalabra = palabra.min.to!string.length.to!uint;
 // arsd es un repositorio de Adam D. Ruppe.
 // https://github.com/adamdruppe/arsd
-import arsd.terminal; 
+version (testing) {
+    import terminalpruebas;
+} else {
+    import arsd.terminal; 
+}
 class TUI {
     import core.thread : Mutex;
     static shared Mutex lock;

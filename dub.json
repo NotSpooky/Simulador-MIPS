@@ -4,5 +4,17 @@
 		"Christian Durán C"
 	],
 	"description": "Simulador MIPS",
-	"license": "MIT"
+	"license": "MIT",
+    "configurations" : [
+        {
+            "name" : "normal",
+            "targetType" : "executable"
+        },
+        {
+            "name" : "testing",
+            "targetType" : "executable",
+            "versions" : ["testing"]
+        }
+    
+    ]
 }

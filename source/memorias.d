@@ -345,7 +345,7 @@ class CachéL2 {
 }
 
 private __gshared CachéL2 cachéL2;
-private __gshared CachéL1Datos [cantidadNúcleos] cachésL1Datos;
+__gshared CachéL1Datos [cantidadNúcleos] cachésL1Datos;
 static assert (cantidadNúcleos == 2);
 enum Candado {L1Datos1, L1Datos2, L2, instrucciones};
 private shared Mutex [Candado.max + 1] m_candados;
