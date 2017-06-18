@@ -4,6 +4,7 @@ import std.conv    : text, to;
 import core.atomic : atomicStore;
 import reloj       : esperarTick, Respuesta, enviar, enviarMensajeDeInicio;
 import memorias    : CachéL1Instrucciones, cachéL1Datos, bloqueFinInstrucciones, bloqueInicioInstrucciones, palabrasPorBloque, bytesPorPalabra;
+import tui         : interfazDeUsuario, TUI;
 
 static shared quantumEspecificadoPorUsuario = 1;
 
@@ -25,7 +26,6 @@ final class Núcleo {
     static uint númeroNúcleo = -1; 
 
     void ejecutar () {
-        import tui : interfazDeUsuario;
         import interpretador : ExcepciónDeFinDePrograma, Instrucción, Código, interpretar;
         assert (candadoContextos);
         candadoContextos.lock;
@@ -63,6 +63,7 @@ final class Núcleo {
                 // Se terminó de ejecutar, se agrega la información de L1,
                 // registros y cantidad de ciclos ejecutados.
                 synchronized {
+                    interfazDeUsuario.modoAvance = TUI.ModoAvance.manual;
                     string bloques = "";
                     foreach (i, bloque; cachéL1Datos.bloques) {
                         bloques ~= text ("\nBloque ", i, ":\n", bloque);

@@ -24,7 +24,7 @@ enum líneaSalidaEstándar        = líneaSalidaNúcleos
                                  + (lineasSalidaPorNúcleo * cantidadNúcleos) 
                                  + 1; //Siguiente.
 
-import memorias   : palabra, palabrasPorBloque, memoriaPrincipal, bytesPorPalabra, cachésL1Datos;
+import memorias   : palabra, palabrasPorBloque, bytesPorPalabra, cachésL1Datos;
 import std.traits : isUnsigned;
 import std.conv   : to, text;
 enum tamañoPalabra = palabra.min.to!string.length.to!uint;
@@ -220,8 +220,8 @@ class TUI {
     /// Continuo no se interrumpe pero muestra la información,
     /// Manual es paso por paso,
     /// Rápido solo muestra hasta el final.
-    private enum ModoAvance {continuo, manual, rápido};
-    private shared ModoAvance modoAvance = ModoAvance.manual;
+    enum ModoAvance {continuo, manual, rápido};
+    shared ModoAvance modoAvance = ModoAvance.manual;
     private uint byteInicialMostrado () {
         return filaInicialDeMemoria * palabrasPorLínea;
     }
@@ -309,6 +309,7 @@ class TUI {
         return repeat (' ', cantidad).array;
     }
     private void ponerMarcoMemoria () {
+        import memorias : memoriaPrincipal;
         static assert (memoriaPrincipal.length < 9999 / palabrasPorBloque);
         enum tamDirección = 4;
         assert (ubicaciónDeMemoria [0] + tamDirección + 1  < terminal.width

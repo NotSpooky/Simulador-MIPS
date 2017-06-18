@@ -39,7 +39,6 @@ enum Código : byte {
 import nucleo : Núcleo;
 import tui : interfazDeUsuario;
 import memorias : memoriaPrincipal, bytesPorPalabra, cachéL1Datos;
-import memorias : log;
 static void interpretar (Núcleo núcleo, Instrucción instrucción) {
     interfazDeUsuario.mostrarInstrucción (`Ejecutando `, instrucción);
     with (instrucción) final switch (código) {
@@ -114,9 +113,7 @@ static void interpretar (Núcleo núcleo, Instrucción instrucción) {
             /**/ , `LW no alineado: ` ~ posBase.to!string);
             uint posición = (posBase / bytesPorPalabra).to!int;
             assert (posición >= 0 && posición < 256, `Pos fuera de memoria.`);
-            log (0, `Load normal en `, posición * 4);
             núcleo.registros [rf2] = (*cachéL1Datos) [posición];
-            log (2, `Leído `, núcleo.registros [rf2]);
             break;
         case Código.SW:
             // Memoria (n + (Ry)) <-- Rx 
@@ -126,7 +123,6 @@ static void interpretar (Núcleo núcleo, Instrucción instrucción) {
             assert ((posBase % bytesPorPalabra) == 0, `SW no alineado: ` ~ posBase.to!string);
             uint posición = (posBase / bytesPorPalabra).to!int;
             assert (posición >= 0 && posición < 256);
-            log (0, `Store normal en `, posición * 4);
             cachéL1Datos.store(Rx, posición);
             break;
         case Código.FIN:
@@ -140,9 +136,7 @@ static void interpretar (Núcleo núcleo, Instrucción instrucción) {
             /**/ , `LL no alineado: ` ~ posBase.to!string);
             uint posición = (posBase / bytesPorPalabra).to!int;
             assert (posición >= 0 && posición < 256, `Pos fuera de memoria.`);
-            log (0, `LL en `, posición * 4);
             núcleo.registros [rf2] = (*cachéL1Datos) [posición, true];
-            log (2, `Leido en LL val = `, núcleo.registros [rf2]);
             break;
         case Código.SC:
             // Memoria (n + (Ry)) <-- Rx 
@@ -152,13 +146,10 @@ static void interpretar (Núcleo núcleo, Instrucción instrucción) {
             assert ((posBase % bytesPorPalabra) == 0, `SC no alineado: ` ~ posBase.to!string);
             uint posición = (posBase / bytesPorPalabra).to!int;
             assert (posición >= 0 && posición < 256);
-            log (2, `SC en `, posición * 4);
             cachéL1Datos.store (Rx, posición,
                 () {
                     núcleo.registros [rf2] = 0; 
-                    log (1, `Poniendo reg en 0, falló.`);
                 }, true);
-            log (2, `Fin de SC, reg con val: `, núcleo.registros [rf2]);
             break;
     }
 }

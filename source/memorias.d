@@ -45,7 +45,6 @@ class CachéL1 (TipoCaché tipoCaché) {
             conseguirCandados ([this.candado, Candado.L2, candadoDeLaOtraL1]);
             scope (exit) {
                 if (esLL) {
-                    log (0, `LL: escribiendo RL = `, índiceEnMemoria * bytesPorPalabra);
                     rl = índiceEnMemoria * bytesPorPalabra;
                 }
                 liberarAlFinal (this.candado);
@@ -57,15 +56,14 @@ class CachéL1 (TipoCaché tipoCaché) {
 
         // Se revisa si está el dato en la caché para retornarlo.
         mixin calcularPosiciones;
-        auto bloqueBuscado = &this.bloques [numBloqueL1];
+        int posCheckear = -1;
+        auto bloqueBuscado = &(this.bloques [numBloqueL1]);
         with (bloqueBuscado) { // Se encontró en la caché y está válido.
             if (válido && bloqueEnMemoria == numBloqueMem) {
-                static if (tipoCaché == TipoCaché.datos) log (1, `Leyendo de la propia caché L1`);
                 return (*bloqueBuscado) [numPalabra];
             }
             // Le va a caer encima, si es el bloque del rl hay que invalidarlo.
             if (válido && bloqueRL == bloqueEnMemoria) {
-                log (0, `Cayendo encima a bloque de RL, trayendo `, índiceEnMemoria * bytesPorPalabra);
                 rl = -1;
             }
 
@@ -74,14 +72,18 @@ class CachéL1 (TipoCaché tipoCaché) {
                 // Se obtuvo la L2.
                 if (modificado) { 
                     assert (válido);
+                    memoriaPrincipal [bloqueBuscado.bloqueEnMemoria].palabras = bloqueBuscado.palabras;
                     mandarAMemoria (bloqueBuscado);
                     assert (!válido);
+                    posCheckear = bloqueEnMemoria;
                 }
 
                 // Se tiene el bloque libre para traerlo.
                 // Se intenta conseguir la otra L1 para ver si tiene el dato (snooping).
                 revisarEnOtraL1 (bloqueBuscado, índiceEnMemoria);
+
                 (*bloqueBuscado) = traerDeL2 (numBloqueMem);
+
             } else { // Es de instrucciones, va directo a mem.
                 conseguirCandados ([Candado.instrucciones]);
                 // Se trae de memoria.
@@ -94,6 +96,7 @@ class CachéL1 (TipoCaché tipoCaché) {
             }
             assert (válido, `Retornando bloque inválido.`);
         }
+
         return (*bloqueBuscado)[numPalabra]; 
     }
 
@@ -117,21 +120,14 @@ class CachéL1 (TipoCaché tipoCaché) {
             auto bloqueBuscado = &this.bloques [numBloqueL1];
 
             if (esSC && getRl != (índiceEnMemoria * bytesPorPalabra)) {
-                log(0, "SC fail, ", índiceEnMemoria * bytesPorPalabra, ` val = `, porColocar);
                 acciónSiRLNoCoincide ();
                 return;
-            }
-            if (esSC) {
-                log (0, `SC exitoso, `, índiceEnMemoria * bytesPorPalabra, ` val escrito = `, porColocar);
-            } else {
-                log (0, `Store en `, índiceEnMemoria * bytesPorPalabra, ` val = `, porColocar);
             }
             with (bloqueBuscado) {
 
                 // Se revisa si está el dato en la caché para retornarlo.
                 if (modificado && bloqueEnMemoria == numBloqueMem) {
                     assert (válido);
-                    log (1, `Se tiene el bloque modificado, escribiendo ahí`);
                     (*bloqueBuscado)[numPalabra] = porColocar;
                     return;
                 }
@@ -144,11 +140,9 @@ class CachéL1 (TipoCaché tipoCaché) {
                     assert (válido, `bloqueBuscado no es válido.`);
                     if (bloqueRL == bloqueEnMemoria) {
                         // Le va a caer encima, si es el bloque del rl hay que invalidarlo.
-                        log (1, `Invalidando bloque local del RL`);
                         rl = -1;
-                    } else {
-                        log (1, `Invalidando bloque `, bloqueEnMemoria, `, no es el del RL (`, bloqueRL, `)`);
                     }
+                    memoriaPrincipal [bloqueBuscado.bloqueEnMemoria].palabras = bloqueBuscado.palabras;
                     mandarAMemoria (bloqueBuscado);
                 }
                 assert (!modificado);
@@ -162,7 +156,6 @@ class CachéL1 (TipoCaché tipoCaché) {
                     if (bloqueEnMemoria == numBloqueMem && válido) {
                         assert (!modificado);
                     } else {
-                        log (1, `Trayendo bloque `, numBloqueMem, ` de L2/mem`);
                         (*bloqueBuscado) = traerDeL2 (numBloqueMem);
                         assert (válido);
                     }
@@ -212,7 +205,6 @@ class CachéL1 (TipoCaché tipoCaché) {
             
             if (otraLoTiene && válido) {
                 if (esStore && bloqueRL (posOtroNúcleo) == bloqueEnMemoria) {
-                    log (1, `Invalidando el RL en la otra caché: Este es store`);
                     // Se va a quitar del otro y es el bloque al que pertenece el RL.
                     otroRL = -1;
                 }
@@ -222,10 +214,7 @@ class CachéL1 (TipoCaché tipoCaché) {
                         assert (bloqueBuscado.bloqueEnMemoria != bloqueEnMemoria);
                         if (bloqueBuscado.bloqueEnMemoria == bloqueRL) {
                             // Se le va a caer encima.
-                            log (1, `Invalidando RL local, le va a caer encima de la otra`);
                             rl = -1;
-                        } else {
-                            log (1, `Trayendo de la otra L1 bloque que va a sobreescribir uno (`, bloqueBuscado.bloqueEnMemoria, `) que no es el de RL (`, bloqueRL,`)`);
                         }
                     }
                     bloqueBuscado.bloqueEnMemoria = bloqueEnMemoria;
@@ -233,14 +222,12 @@ class CachéL1 (TipoCaché tipoCaché) {
                     bloqueBuscado.válido          = true;
                     bloqueBuscado.modificado      = true;
                     porRetornar = true;
-                    log (1, `Sobreescrito con el bloque: `, bloqueEnMemoria);
                 }
                 if (bloqueOtraL1.modificado) {
                     if (bloqueEnMemoria == bloqueRL (posOtroNúcleo)) {
-                        log (1, `Invalidando el RL en la otra caché: está modificado`);
                         otroRL = -1;
                     }
-                    log (1, `Mandando a memoria bloque modificado de la otra: `, bloqueEnMemoria);
+                    memoriaPrincipal [bloqueOtraL1.bloqueEnMemoria].palabras = bloqueOtraL1.palabras;
                     mandarAMemoria (bloqueOtraL1);
                 }
                 if (esStore) { 
@@ -254,6 +241,9 @@ class CachéL1 (TipoCaché tipoCaché) {
     }
     /// Envia bloquePorMandar de caché L1 a memoria.
     void mandarAMemoria (Bloque!(Tipo.caché) * bloquePorMandar) {
+        auto palabrasBloque = bloquePorMandar.palabras;
+        auto posMem = bloquePorMandar.bloqueEnMemoria;
+        import std.file, std.conv;
         with (bloquePorMandar) {
             assert (modificado && válido);
             modificado = false;
@@ -261,13 +251,14 @@ class CachéL1 (TipoCaché tipoCaché) {
             // Es write back y está modificado => Hay que escribirlo a L2/mem.
             foreach (i; 0..ciclosBloqueMemL2 + ciclosBloqueL2L1) {
                 interfazDeUsuario.mostrar (
-                /**/ `Escribiendo bloque modificado en memoria: `, i+1, '/'
+                /**/ `Escribiendo bloque `, posMem
+                /**/ ,` modificado en memoria: `, i+1, '/'
                 /**/ , ciclosBloqueL2L1 + ciclosBloqueMemL2
                 );
                 relojazo;
             }
-            memoriaPrincipal [bloqueEnMemoria] = palabras;
         }
+        interfazDeUsuario.actualizarMemoriaMostrada;
     }
     /// Recibe un arreglo de candados, donde el último es el que todavía no se
     /// ha conseguido y el resto son los que hay que tener (en orden)
@@ -371,7 +362,7 @@ struct Bloque (Tipo tipo) {
     static if (tipo == Tipo.memoria) {
         // Es memoria, se inicializa con 1s.
         palabra [palabrasPorBloque] palabras = 1;
-        alias palabras this; // Permite usar el operador de índice.
+        //alias palabras this; // Permite usar el operador de índice.
     } else {
         uint bloqueEnMemoria                 = 0;
         // Es caché, se inicializa con 0s.
@@ -406,12 +397,9 @@ struct Bloque (Tipo tipo) {
 
 auto memoriaPrincipalEnPalabras () {
     import std.algorithm;
-    return memoriaPrincipal.reduce!`a ~ b`;
-}
-
-auto log (T...)(uint indentación, T args) {
-    /+
-    import std.file, std.conv, std.range;
-    `../oveja.txt`.append (text(' '.repeat (indentación * 2), `Hilillo `, Núcleo.registros.númeroHilillo, " en núcleo ", Núcleo.númeroNúcleo, `: `, args, '\n'));
-    +/
+    palabra [] toRet = [];
+    foreach (bloque; memoriaPrincipal) {
+        toRet ~= bloque.palabras;
+    }
+    return toRet;
 }
