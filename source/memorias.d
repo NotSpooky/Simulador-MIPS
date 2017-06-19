@@ -41,15 +41,11 @@ class CachéL1 (TipoCaché tipoCaché) {
     auto opIndex (uint índiceEnMemoria, bool esLL = false) {
         static if (tipoCaché == TipoCaché.datos) {
             conseguirCandados ([this.candado]);
-            conseguirCandados ([this.candado, Candado.L2]);
-            conseguirCandados ([this.candado, Candado.L2, candadoDeLaOtraL1]);
             scope (exit) {
                 if (esLL) {
                     rl = índiceEnMemoria * bytesPorPalabra;
                 }
                 liberarAlFinal (this.candado);
-                liberarAlFinal (candadoDeLaOtraL1);
-                liberarAlFinal (Candado.L2);
             }
         }
         // Se obtuvo la L1 de este núcleo.
@@ -68,6 +64,8 @@ class CachéL1 (TipoCaché tipoCaché) {
 
             // No se encontró.
             static if (tipoCaché == TipoCaché.datos) { // Se usa snooping y L2.
+                conseguirCandados ([this.candado, Candado.L2]);
+                conseguirCandados ([this.candado, Candado.L2, candadoDeLaOtraL1]);
                 // Se obtuvo la L2.
                 if (modificado) { 
                     assert (válido);
@@ -82,6 +80,8 @@ class CachéL1 (TipoCaché tipoCaché) {
 
                 (*bloqueBuscado) = traerDeL2 (numBloqueMem);
 
+                liberarAlFinal (candadoDeLaOtraL1);
+                liberarAlFinal (Candado.L2);
             } else { // Es de instrucciones, va directo a mem.
                 conseguirCandados ([Candado.instrucciones]);
                 // Se trae de memoria.
