@@ -117,7 +117,7 @@ final class Núcleo {
                             assert (registros [3] == 0);
                             assert (registros [4] == 384);
                             assert (registros [8] == 8);
-                            assert (registros [10] == 4 || registros [11] == 5);
+                            assert (registros [10] == 4 || registros [10] == 5);
                             assert (registros [11] == 4 || registros [11] == 5);
                             assert (registros [12] >= 88 && registros [12] <= 110);
                             assert (registros [14] >= -110 && registros [14] <= -88);
