@@ -60,6 +60,72 @@ final class Núcleo {
                 interpretar (this, instrucción);
                 registros.contadorDePrograma += 4;
             } catch (ExcepciónDeFinDePrograma) {
+                version (testing) {
+                    switch (registros.númeroHilillo) {
+                        case 0: //No ocupa nada lel.
+                            break;
+                        case 1:
+                            assert (registros [1]  == 1);
+                            assert (registros [2]  == 0);
+                            assert (registros [3]  == 0);
+                            assert (registros [4]  == 240);
+                            assert (registros [8]  == 8);
+                            assert (registros [20] == 2);
+                            break;
+                        case 2:
+                            assert (registros [1]  == 1);
+                            assert (registros [2]  == 2);
+                            assert (registros [4]  == 0);
+                            assert (registros [5]  == 45);
+                            assert (registros [21] == 0);
+                            assert (registros [22] == 42);
+                            assert (registros [23] == 1);
+                            // Esto puede variar.
+                            //assert (registros [31] == 524);
+                            break;
+                        case 3:
+                            assert (registros [1] == 1);
+                            assert (registros [2] == 0);
+                            assert (registros [3] == 0);
+                            assert (registros [4] == 240);
+                            assert (registros [8] == 8);
+                            assert (registros [10] == 2);
+                            assert (registros [11] == 2);
+                            assert (registros [12] == 20);
+                            assert (registros [13] == 3);
+                            assert (registros [14] == 60);
+                            break;
+                        case 4:
+                            assert (registros [1] == 1);
+                            assert (registros [2] == 0);
+                            assert (registros [3] == 0);
+                            assert (registros [4] == 384);
+                            assert (registros [8] == 8);
+                            assert (registros [14] == 4);
+                            break;
+                        case 5:
+                            assert (registros [1] == 1);
+                            assert (registros [2] == 0);
+                            assert (registros [3] == 0);
+                            assert (registros [4] == 384);
+                            assert (registros [8] == 8);
+                            assert (registros [14] == 5);
+                            break;
+                        case 6:
+                            assert (registros [1] == 1);
+                            assert (registros [2] == 0);
+                            assert (registros [3] == 0);
+                            assert (registros [4] == 384);
+                            assert (registros [8] == 8);
+                            assert (registros [10] == 4 || registros [11] == 5);
+                            assert (registros [11] == 4 || registros [11] == 5);
+                            assert (registros [12] >= 88 && registros [12] <= 110);
+                            assert (registros [14] >= -110 && registros [14] <= -88);
+                            assert (registros [15] == -1);
+                            break;
+                        default: assert (0, `No sé programar`);
+                    }
+                }
                 // Se terminó de ejecutar, se agrega la información de L1,
                 // registros y cantidad de ciclos ejecutados.
                 synchronized {
