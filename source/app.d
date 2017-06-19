@@ -51,7 +51,8 @@ void main (string [] args)
         // Revisa si el valor de una posición de memoria coincide con el
         // esperado, tomando en cuenta que las cachés lo pueden tener modificado.
         // Pos de mem es en bytes.
-        auto valFinalEn (uint posDeMem, palabra valor) {
+        auto valFinalEn (uint posDeMem, palabra valorMenor, palabra valorMayor = palabra.min) {
+            if (valorMayor == palabra.min) valorMayor = valorMenor;
             import std.conv : text;
             auto numPalabra = posDeMem / bytesPorPalabra;
             auto numBloqueMem  = numPalabra / palabrasPorBloque;
@@ -61,12 +62,13 @@ void main (string [] args)
                 if (bloqueEnL1.modificado && (bloqueEnL1.bloqueEnMemoria == numBloqueMem)) {
                     const palabraEnBloque = bloqueEnL1.palabras [numPalabra % palabrasPorBloque];
                     // Se busca de caché;
-                    assert (palabraEnBloque == valor, text (`Se esperaba un `, valor, ` en caché modificada (pos `, posDeMem,`) pero se obtuvo un `, palabraEnBloque));
+                    assert (palabraEnBloque >= valorMenor && palabraEnBloque <= valorMayor, text (`Se esperaba un número entre `, valorMenor,` y `, valorMayor, ` en caché modificada (pos `, posDeMem,`) pero se obtuvo un `, palabraEnBloque));
                     return;
                 }
             }
             // No está en caché, se busca en memoria.
-            assert (memoriaPrincipalEnPalabras [numPalabra] == valor, text(`Se esperaba un `, valor, ` en la posición `, posDeMem, ` de memoria, recibido `, memoriaPrincipalEnPalabras [numPalabra],'\n'));
+            auto palabraEnMem = memoriaPrincipalEnPalabras [numPalabra];
+            assert (palabraEnMem >= valorMenor && palabraEnMem <= valorMayor, text(`Se esperaba un número entre `, valorMenor, ` y `, valorMayor, ` en la posición `, posDeMem, ` de memoria, recibido `, memoriaPrincipalEnPalabras [numPalabra],'\n'));
         }
         valFinalEn (0, 45);
         valFinalEn (4, 42);
@@ -80,13 +82,15 @@ void main (string [] args)
         for (int i = 240; i<=252; i+=4) {
             valFinalEn (i, 1);
         }
-        // TO DO: Revisar pos 256.
+        valFinalEn (256, -110, 88);
         valFinalEn (260, 0);
         valFinalEn (264, 0);
         for (int i = 268; i<=292; i+=4) {
             valFinalEn (i, 1);
         }
-        // TO DO: Revisar que el resto sean 4 o 5.
+        for (int i = 296; i<=380; i+=4) {
+            valFinalEn (i, 4, 5);
+        }
         writeln (`Finalizada prueba`);
     } else {
         // Se muestran los datos finales de los hilillos y cachés.

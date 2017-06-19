@@ -56,7 +56,6 @@ class CachéL1 (TipoCaché tipoCaché) {
 
         // Se revisa si está el dato en la caché para retornarlo.
         mixin calcularPosiciones;
-        int posCheckear = -1;
         auto bloqueBuscado = &(this.bloques [numBloqueL1]);
         with (bloqueBuscado) { // Se encontró en la caché y está válido.
             if (válido && bloqueEnMemoria == numBloqueMem) {
@@ -75,7 +74,6 @@ class CachéL1 (TipoCaché tipoCaché) {
                     memoriaPrincipal [bloqueBuscado.bloqueEnMemoria].palabras = bloqueBuscado.palabras;
                     mandarAMemoria (bloqueBuscado);
                     assert (!válido);
-                    posCheckear = bloqueEnMemoria;
                 }
 
                 // Se tiene el bloque libre para traerlo.
