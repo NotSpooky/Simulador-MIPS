@@ -64,8 +64,8 @@ class CachéL1 (TipoCaché tipoCaché) {
 
             // No se encontró.
             static if (tipoCaché == TipoCaché.datos) { // Se usa snooping y L2.
-                conseguirCandados ([this.candado, Candado.L2]);
-                conseguirCandados ([this.candado, Candado.L2, candadoDeLaOtraL1]);
+                conseguirCandados ([this.candado, candadoDeLaOtraL1]);
+                conseguirCandados ([this.candado, candadoDeLaOtraL1, Candado.L2]);
                 // Se obtuvo la L2.
                 if (modificado) { 
                     assert (válido);
@@ -105,12 +105,8 @@ class CachéL1 (TipoCaché tipoCaché) {
         void store (palabra porColocar, uint índiceEnMemoria, void delegate () acciónSiRLNoCoincide = null, bool esSC = false) {
             assert ((acciónSiRLNoCoincide == null) ^ esSC, `Solo debe enviarse acciónSiRLNoCoincide si es SC.`);
             conseguirCandados ([this.candado]);
-            conseguirCandados ([this.candado, Candado.L2]);
-            conseguirCandados ([this.candado, Candado.L2, candadoDeLaOtraL1]);
             scope (exit) {
                 liberarAlFinal (this.candado);
-                liberarAlFinal (candadoDeLaOtraL1);
-                liberarAlFinal (Candado.L2);
             }
             // Se obtuvo la L1 de este núcleo.
 
@@ -130,6 +126,8 @@ class CachéL1 (TipoCaché tipoCaché) {
                     return;
                 }
                 
+                conseguirCandados ([this.candado, candadoDeLaOtraL1]);
+                conseguirCandados ([this.candado, candadoDeLaOtraL1, Candado.L2]);
                 // No se encontró.
                 // Se obtuvo la L2 y memoria.
                 if (modificado) { 
@@ -164,6 +162,8 @@ class CachéL1 (TipoCaché tipoCaché) {
                 assert (válido && modificado, `Usando bloque inválido: ` ~ (*bloqueBuscado).to!string);
                 (*bloqueBuscado) [numPalabra] = porColocar;
                 cachéL2.invalidar (numBloqueMem);
+                liberarAlFinal (candadoDeLaOtraL1);
+                liberarAlFinal (Candado.L2);
                 return;
             }
         }
@@ -265,7 +265,6 @@ class CachéL1 (TipoCaché tipoCaché) {
         assert (candados.length, `No se recibieron candados.`);
         while (!m_candados [candados [$-1]].tryLock) {
             interfazDeUsuario.mostrar (`Falló en obtener candado (L` ~ numLínea.to!string ~ `)`);
-            volverAIntentar:
             // No se consiguió, hay que esperarse al siguiente ciclo.
             if (candados.length == 1) {
                 relojazo;
@@ -280,16 +279,8 @@ class CachéL1 (TipoCaché tipoCaché) {
                 }
             }
         }
-        // Consiguió el candado pero puede que se haya liberado este mismo ciclo,
-        // en cuyo caso se suelta.
-        if (estampillasCandados [candados [$-1]] == cicloActual) {
-            m_candados [candados [$-1]].unlock;
-            interfazDeUsuario.mostrar (`Falló en obtener candado liberado este ciclo`);
-            goto volverAIntentar;
-        }
     }
     void liberarAlFinal (Candado candado) {
-        estampillasCandados [candado] = cicloActual;
         m_candados [candado].unlock;
     }
 
@@ -341,7 +332,6 @@ private shared Mutex [Candado.max + 1] m_candados;
 /// Si se trata de conseguir un candado pero la estampilla correspondiente
 /// es == al número de ciclo, entonces se liberó este mismo ciclo, por lo
 /// que no se puede usar hasta el siguiente.
-private shared int [m_candados.length] estampillasCandados = -1;
 
 /// Constructor de módulo para inicializar variables compartidas.
 private shared static this () {
