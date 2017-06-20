@@ -24,7 +24,8 @@ auto preguntarPorHilillos () {
             .sort!`a<b`
             .array;
         }
-        chdir (`hilos`);
+        if (exists (`hilos`) && isDir (`hilos`))
+            chdir (`hilos`);
         while (numDir != 0) {
             string directorioActual = getcwd;
             writeln (`Escriba el número de directorio al cual moverse`);
