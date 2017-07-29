@@ -113,7 +113,7 @@ static void interpretar (Núcleo núcleo, Instrucción instrucción) {
             /**/ , `LW no alineado: ` ~ posBase.to!string);
             uint posición = (posBase / bytesPorPalabra).to!int;
             assert (posición >= 0 && posición < 256, `Pos fuera de memoria.`);
-            núcleo.registros [rf2] = (*cachéL1Datos) [posición];
+            núcleo.registros [rf2] = cachéL1Datos.load (posición);
             break;
         case Código.SW:
             // Memoria (n + (Ry)) <-- Rx 
@@ -136,7 +136,7 @@ static void interpretar (Núcleo núcleo, Instrucción instrucción) {
             /**/ , `LL no alineado: ` ~ posBase.to!string);
             uint posición = (posBase / bytesPorPalabra).to!int;
             assert (posición >= 0 && posición < 256, `Pos fuera de memoria.`);
-            núcleo.registros [rf2] = (*cachéL1Datos) [posición, true];
+            núcleo.registros [rf2] = cachéL1Datos.load (posición, true);
             break;
         case Código.SC:
             // Memoria (n + (Ry)) <-- Rx 

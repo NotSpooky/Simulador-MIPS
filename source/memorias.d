@@ -38,7 +38,7 @@ class CachéL1 (TipoCaché tipoCaché) {
 
     /// Implementa el Load word.
     /// Se indexa igual que la memoria, pero índice es por palabra, no por bloque.
-    auto opIndex (uint índiceEnMemoria, bool esLL = false) {
+    auto load (uint índiceEnMemoria, bool esLL = false) {
         static if (tipoCaché == TipoCaché.datos) {
             conseguirCandados ([this.candado]);
             scope (exit) {

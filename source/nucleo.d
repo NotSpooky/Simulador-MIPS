@@ -55,7 +55,7 @@ final class Núcleo {
             }
             esperarTick;
             assert (registros.contadorDePrograma % bytesPorPalabra == 0);
-            auto instrucción = Instrucción (cachéInstrucciones [registros.contadorDePrograma / bytesPorPalabra]);
+            auto instrucción = Instrucción (cachéInstrucciones.load(registros.contadorDePrograma / bytesPorPalabra));
             try {
                 interpretar (this, instrucción);
                 registros.contadorDePrograma += 4;
